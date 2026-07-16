@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0c0f14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Cell BMS Pro</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Cell BMS Pro","short_name":"BMS Pro","display":"standalone","background_color":"%230c0f14","theme_color":"%230c0f14","icons":[]}'>
+<style>
+:root{
+  --bg:#0c0f14; --bg2:#12161f; --card:#171c27; --card2:#1d2331; --border:#252c3b;
+  --txt:#e8ecf4; --muted:#8b95a9; --faint:#5b6478;
+  --accent:#2dd4a7; --accent2:#22c55e; --blue:#3b82f6; --red:#ef4444; --amber:#f59e0b;
+  --shadow:0 6px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;}
+body{max-width:640px;margin:0 auto;padding:0 14px calc(40px + env(safe-area-inset-bottom));min-height:100vh;}
+h1,h2,h3{margin:0;font-weight:650}
+.muted{color:var(--muted)} .faint{color:var(--faint)}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}
+
+/* Header */
+header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,var(--bg) 70%,transparent);
+  padding:calc(12px + env(safe-area-inset-top)) 2px 12px;display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--blue));
+  display:grid;place-items:center;font-size:18px;box-shadow:var(--shadow)}
+.brand{font-size:18px;letter-spacing:.2px}
+.brand small{display:block;font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.5px}
+.spacer{flex:1}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--faint);flex:none;transition:.3s}
+.dot.on{background:var(--accent2);box-shadow:0 0 10px var(--accent2)}
+.dot.warn{background:var(--amber)}
+.iconbtn{width:38px;height:38px;border-radius:10px;background:var(--card);color:var(--txt);
+  border:1px solid var(--border);font-size:17px;display:grid;place-items:center}
+.btn{padding:10px 16px;border-radius:11px;background:var(--accent);color:#04231b;font-weight:700;font-size:14px}
+.btn.ghost{background:var(--card);color:var(--txt);border:1px solid var(--border)}
+.btn.red{background:var(--red);color:#fff}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.5}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:15px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card h3{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card2);border-radius:12px;padding:12px 13px}
+.stat .lbl{font-size:11px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+.stat .val{font-size:22px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+.stat .val small{font-size:12px;color:var(--muted);font-weight:600;margin-left:2px}
+.stat .val.pos{color:var(--accent2)} .stat .val.neg{color:var(--amber)}
+
+/* Hero / gauge */
+.hero{display:flex;align-items:center;gap:16px}
+.gauge{position:relative;width:132px;height:132px;flex:none}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .center{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.gauge .soc{font-size:30px;font-weight:750;line-height:1}
+.gauge .soc small{font-size:14px;color:var(--muted)}
+.gauge .sub{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:1px}
+.herostats{flex:1;display:flex;flex-direction:column;gap:9px}
+.hs{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px dashed var(--border);padding-bottom:7px}
+.hs:last-child{border:none;padding:0}
+.hs .k{font-size:12px;color:var(--muted)}
+.hs .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* Alarm banner */
+#alarm{display:none;border-radius:14px;padding:12px 14px;margin-bottom:12px;font-weight:600;font-size:14px;align-items:center;gap:10px}
+#alarm.ok{display:flex;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.35);color:#7ee2a8}
+#alarm.bad{display:flex;background:rgba(239,68,68,.13);border:1px solid rgba(239,68,68,.4);color:#ff9a9a;animation:pulse 1.4s infinite}
+#alarm.warn{display:flex;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);color:#f7c66b}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.72}}
+#alarm .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.tag{font-size:11px;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.08);font-weight:600}
+
+/* MOSFET controls */
+.switch{display:flex;align-items:center;justify-content:space-between;background:var(--card2);border-radius:12px;padding:13px 14px;margin-bottom:9px}
+.switch:last-child{margin-bottom:0}
+.switch .info{display:flex;align-items:center;gap:11px}
+.switch .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:18px;background:rgba(255,255,255,.06)}
+.switch .nm{font-weight:650;font-size:15px}
+.switch .st{font-size:11px;color:var(--muted)}
+.toggle{width:58px;height:32px;border-radius:20px;background:#39414f;position:relative;transition:.25s;flex:none}
+.toggle.on{background:var(--accent2)}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:.25s}
+.toggle.on::after{left:29px}
+.toggle.busy{opacity:.5}
+
+/* Cells */
+.cellhead{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:13px}
+.cellhead .m{background:var(--card2);border-radius:10px;padding:8px;text-align:center}
+.cellhead .m .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.cellhead .m .v{font-size:15px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.cell{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.cell .idx{width:26px;font-size:11px;color:var(--muted);text-align:right;flex:none}
+.cell .bar{flex:1;height:22px;background:var(--card2);border-radius:6px;overflow:hidden;position:relative}
+.cell .fill{height:100%;border-radius:6px;transition:width .4s ease;background:var(--accent)}
+.cell .fill.min{background:var(--blue)} .cell .fill.max{background:var(--amber)}
+.cell .mv{width:56px;text-align:right;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;flex:none}
+.cell .bal{width:14px;flex:none;font-size:12px;text-align:center;color:var(--faint)}
+.cell .bal.act{color:var(--accent);animation:pulse 1s infinite}
+
+/* Chart */
+.segbar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.seg{padding:6px 13px;border-radius:9px;background:var(--card2);color:var(--muted);font-size:12px;font-weight:650;border:1px solid transparent}
+.seg.on{background:rgba(45,212,167,.15);color:var(--accent);border-color:rgba(45,212,167,.4)}
+canvas{width:100%;height:190px;display:block}
+.chartfoot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11px;color:var(--muted)}
+
+/* Log */
+#log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--muted);
+  background:#0a0d12;border-radius:10px;padding:10px;max-height:150px;overflow:auto;white-space:pre-wrap;line-height:1.5}
+details summary{cursor:pointer;color:var(--muted);font-size:12px;padding:4px 0;list-style:none}
+details summary::-webkit-details-marker{display:none}
+
+/* Settings modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:none;align-items:flex-end;justify-content:center}
+.modal.show{display:flex}
+.sheet{background:var(--bg2);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:18px 16px calc(24px + env(safe-area-inset-bottom));width:100%;max-width:640px}
+.sheet h2{font-size:16px;margin-bottom:16px}
+.row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border:none}
+.row .k{font-size:14px} .row .k small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+select,input[type=number]{background:var(--card);color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
+.empty{text-align:center;color:var(--faint);padding:34px 10px;font-size:14px}
+.hidden{display:none!important}
+.disc{font-size:11px;color:var(--faint);text-align:center;padding:14px 6px 4px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚡</div>
+  <div class="brand">Cell BMS Pro<small id="devname">NOT CONNECTED</small></div>
+  <div class="spacer"></div>
+  <div class="dot" id="statusdot"></div>
+  <button class="iconbtn" id="settingsBtn" title="Settings">⚙</button>
+  <button class="btn" id="connectBtn">Connect</button>
+</header>
+
+<div id="unsupported" class="card hidden" style="border-color:var(--red)">
+  <h3 style="color:var(--red)">⚠ Web Bluetooth unavailable</h3>
+  <div class="muted" style="font-size:13px;line-height:1.6">This browser can't use Bluetooth. Open this page in
+  <b>Chrome</b> or <b>Edge</b> on Android or desktop, served over <b>https://</b> (see the notes I sent).
+  Safari and iOS are not supported for Web Bluetooth.</div>
+</div>
+
+<div id="alarm"></div>
+
+<!-- Hero -->
+<div class="card" id="heroCard">
+  <div class="hero">
+    <div class="gauge">
+      <svg width="132" height="132" viewBox="0 0 132 132">
+        <circle cx="66" cy="66" r="58" fill="none" stroke="var(--card2)" stroke-width="12"/>
+        <circle id="gaugeArc" cx="66" cy="66" r="58" fill="none" stroke="var(--accent)" stroke-width="12"
+          stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/>
+      </svg>
+      <div class="center">
+        <div>
+          <div class="soc"><span id="socVal">--</span><small>%</small></div>
+          <div class="sub">State of Charge</div>
+        </div>
+      </div>
+    </div>
+    <div class="herostats">
+      <div class="hs"><span class="k">Voltage</span><span class="v" id="hVolt">-- V</span></div>
+      <div class="hs"><span class="k">Current</span><span class="v" id="hCur">-- A</span></div>
+      <div class="hs"><span class="k">Power</span><span class="v" id="hPow">-- W</span></div>
+      <div class="hs"><span class="k">Status</span><span class="v" id="hState" style="font-size:14px">Idle</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats grid -->
+<div class="card">
+  <h3>Pack</h3>
+  <div class="grid">
+    <div class="stat"><div class="lbl">Remaining</div><div class="val" id="sRemain">--<small>Ah</small></div></div>
+    <div class="stat"><div class="lbl">Full Capacity</div><div class="val" id="sNominal">--<small>Ah</small></div></div>
+    <div class="stat"><div class="lbl">Cycles</div><div class="val" id="sCycles">--</div></div>
+    <div class="stat"><div class="lbl">Temperature</div><div class="val" id="sTemp">--<small>°</small></div></div>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="card">
+  <h3>Controls</h3>
+  <div class="switch">
+    <div class="info"><div class="ic" style="color:var(--accent2)">🔌</div>
+      <div><div class="nm">Charge MOSFET</div><div class="st" id="chgSt">unknown</div></div></div>
+    <div class="toggle" id="chgTog" data-kind="charge"></div>
+  </div>
+  <div class="switch">
+    <div class="info"><div class="ic" style="color:var(--blue)">🔋</div>
+      <div><div class="nm">Discharge MOSFET</div><div class="st" id="dsgSt">unknown</div></div></div>
+    <div class="toggle" id="dsgTog" data-kind="discharge"></div>
+  </div>
+  <div class="faint" style="font-size:11px;margin-top:10px;line-height:1.5">⚠ Turning a MOSFET off cuts charge/discharge current. Recoverable, but be deliberate.</div>
+</div>
+
+<!-- Cells -->
+<div class="card">
+  <h3>Cells <span class="muted" id="cellCount" style="text-transform:none;letter-spacing:0"></span></h3>
+  <div class="cellhead">
+    <div class="m"><div class="k">Min</div><div class="v" id="cMin">--</div></div>
+    <div class="m"><div class="k">Max</div><div class="v" id="cMax">--</div></div>
+    <div class="m"><div class="k">Delta</div><div class="v" id="cDelta">--</div></div>
+    <div class="m"><div class="k">Average</div><div class="v" id="cAvg">--</div></div>
+  </div>
+  <div id="cells"><div class="empty">Connect to view cells</div></div>
+</div>
+
+<!-- Chart -->
+<div class="card">
+  <h3>History</h3>
+  <div class="segbar" id="metricSeg">
+    <div class="seg on" data-m="volt">Voltage</div>
+    <div class="seg" data-m="cur">Current</div>
+    <div class="seg" data-m="pow">Power</div>
+    <div class="seg" data-m="soc">SOC</div>
+  </div>
+  <canvas id="chart"></canvas>
+  <div class="chartfoot">
+    <span id="chartInfo">no data yet</span>
+    <button class="btn ghost" id="csvBtn" style="padding:6px 12px;font-size:12px">Export CSV</button>
+  </div>
+</div>
+
+<details class="card">
+  <summary>Debug log</summary>
+  <div id="log"></div>
+</details>
+
+<div class="disc">Cell BMS Pro · talks the JBD/GR-Energy BLE protocol (FF00 service).<br>Not affiliated with the manufacturer. Use at your own risk.</div>
+
+<!-- Settings -->
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h2>Settings</h2>
+    <div class="row"><div class="k">Poll interval<small>How often to refresh data</small></div>
+      <select id="setPoll"><option value="800">0.8 s</option><option value="1200" selected>1.2 s</option><option value="2000">2 s</option><option value="3000">3 s</option></select></div>
+    <div class="row"><div class="k">MOSFET command<small>Try "Old (E1)" if switches don't respond</small></div>
+      <select id="setCmd"><option value="fb" selected>New (FB)</option><option value="e1">Old (E1)</option></select></div>
+    <div class="row"><div class="k">Temperature unit</div>
+      <select id="setUnit"><option value="c" selected>Celsius</option><option value="f">Fahrenheit</option></select></div>
+    <div class="row"><div class="k">Auto-reconnect<small>Reconnect automatically if the link drops</small></div>
+      <div class="toggle on" id="setReconn"></div></div>
+    <div class="row"><div class="k">History length<small>Points kept for charts</small></div>
+      <select id="setHist"><option value="600">600</option><option value="1800" selected>1800</option><option value="5000">5000</option></select></div>
+    <button class="btn" id="closeSet" style="width:100%;margin-top:16px">Done</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============ Protocol (JBD / GR-Energy) ============ */
+const START=0xDD, END=0x77, READ=0xA5, WRITE=0x5A;
+const SVC=0xff00, C_NOTIFY=0xff01, C_WRITE=0xff02;
+const SVC_ALT=0xffe0, C_ALT=0xffe1;
+
+function checksum(bytes){ let s=0; for(const b of bytes) s=(s+b)&0xFFFF; return (0x10000-s)&0xFFFF; }
+function buildRead(reg){ const cs=checksum([reg,0]); return new Uint8Array([START,READ,reg,0,(cs>>8)&255,cs&255,END]); }
+function buildWrite(reg,data){ const body=[reg,data.length,...data]; const cs=checksum(body);
+  return new Uint8Array([START,WRITE,reg,data.length,...data,(cs>>8)&255,cs&255,END]); }
+
+const PROT_BITS=["Cell over-voltage","Cell under-voltage","Pack over-voltage","Pack under-voltage",
+  "Charge over-temp","Charge under-temp","Discharge over-temp","Discharge under-temp",
+  "Charge over-current","Discharge over-current","Short circuit","IC / AFE error","MOS software lock"];
+
+function parseInfo(d){
+  const u16=i=>(d[i]<<8)|d[i+1]; const i16=i=>{let v=u16(i);return v>0x7fff?v-0x10000:v;};
+  const numNtc=d[22]||0; const temps=[];
+  for(let i=0;i<numNtc;i++){ const raw=u16(23+i*2); temps.push((raw-2731)/10); }
+  const volt=u16(0)/100, cur=i16(2)/100;
+  return {volt,cur,power:volt*cur, remain:u16(4)/100, nominal:u16(6)/100, cycles:u16(8),
+    balancing:(u16(12))|(u16(14)<<16), prot:u16(16), soc:d[19], fet:d[20],
+    chargeFet:!!(d[20]&1), dischargeFet:!!(d[20]&2), numCell:d[21], temps};
+}
+function parseCells(d){ const c=[]; for(let i=0;i+1<d.length;i+=2) c.push((d[i]<<8)|d[i+1]); return c; }
+
+/* ============ State ============ */
+const S={ dev:null, gatt:null, writeCh:null, notifyCh:null, connected:false,
+  buf:[], pollTimer:null, wantReconnect:false, info:null, cells:[],
+  hist:[], metric:"volt", busy:false,
+  cfg:{poll:1200, cmd:"fb", unit:"c", reconnect:true, hist:1800} };
+
+const $=id=>document.getElementById(id);
+function log(m){ const el=$("log"); const t=new Date().toLocaleTimeString();
+  el.textContent=(`[${t}] ${m}\n`+el.textContent).slice(0,4000); }
+function hex(u8){ return [...u8].map(b=>b.toString(16).padStart(2,"0").toUpperCase()).join(" "); }
+
+/* ============ Bluetooth ============ */
+async function connect(){
+  if(!navigator.bluetooth){ $("unsupported").classList.remove("hidden"); return; }
+  try{
+    log("requesting device…");
+    S.dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC,SVC_ALT,C_NOTIFY,C_WRITE,C_ALT]});
+    S.dev.addEventListener("gattserverdisconnected",onDrop);
+    S.wantReconnect=true;
+    await openGatt();
+  }catch(e){ log("connect cancelled: "+e.message); }
+}
+async function openGatt(){
+  setStatus("warn","connecting…");
+  S.gatt=await S.dev.gatt.connect();
+  let svc,writeCh,notifyCh;
+  try{ svc=await S.gatt.getPrimaryService(SVC);
+    writeCh=await svc.getCharacteristic(C_WRITE); notifyCh=await svc.getCharacteristic(C_NOTIFY);
+  }catch(e){ log("FF00 not found, trying FFE0…");
+    svc=await S.gatt.getPrimaryService(SVC_ALT);
+    writeCh=await svc.getCharacteristic(C_ALT); notifyCh=writeCh; }
+  S.writeCh=writeCh; S.notifyCh=notifyCh;
+  await notifyCh.startNotifications();
+  notifyCh.addEventListener("characteristicvaluechanged",onData);
+  S.connected=true; S.buf=[];
+  $("devname").textContent=(S.dev.name||"BMS").toUpperCase();
+  $("connectBtn").textContent="Disconnect";
+  setStatus("on","connected");
+  log("connected ✓");
+  startPolling();
+}
+function onDrop(){
+  S.connected=false; stopPolling(); setStatus("","disconnected");
+  $("connectBtn").textContent="Connect";
+  log("link dropped");
+  if(S.wantReconnect && S.cfg.reconnect){
+    setStatus("warn","reconnecting…");
+    setTimeout(async()=>{ if(!S.wantReconnect)return;
+      try{ await openGatt(); }catch(e){ log("reconnect failed, retrying…"); if(S.wantReconnect&&S.cfg.reconnect) setTimeout(onDrop,3000); }
+    },1500);
+  }
+}
+function disconnect(){ S.wantReconnect=false; stopPolling();
+  try{ S.gatt&&S.gatt.connected&&S.gatt.disconnect(); }catch(e){}
+  S.connected=false; setStatus("","disconnected"); $("connectBtn").textContent="Connect";
+  $("devname").textContent="NOT CONNECTED"; log("disconnected by user");
+}
+async function send(u8){
+  if(!S.writeCh) return;
+  try{ if(S.writeCh.writeValueWithoutResponse) await S.writeCh.writeValueWithoutResponse(u8);
+       else await S.writeCh.writeValue(u8); }
+  catch(e){ try{ await S.writeCh.writeValue(u8);}catch(e2){ log("write err: "+e2.message);} }
+}
+
+/* frame reassembly */
+function onData(ev){
+  const v=ev.target.value; for(let i=0;i<v.byteLength;i++) S.buf.push(v.getUint8(i));
+  let guard=0;
+  while(S.buf.length>=7 && guard++<40){
+    const st=S.buf.indexOf(START);
+    if(st<0){ S.buf=[]; break; }
+    if(st>0) S.buf.splice(0,st);
+    if(S.buf.length<4) break;
+    const reg=S.buf[1], len=S.buf[3], total=4+len+3;
+    if(S.buf.length<total) break;
+    if(S.buf[total-1]!==END){ S.buf.shift(); continue; }
+    const payload=S.buf.slice(4,4+len);
+    S.buf.splice(0,total);
+    handleFrame(reg,S.buf[2],payload);
+  }
+}
+function handleFrame(reg,status,payload){
+  try{
+    if(reg===0x03){ S.info=parseInfo(payload); pushHist(); renderInfo(); }
+    else if(reg===0x04){ S.cells=parseCells(payload); renderCells(); }
+  }catch(e){ log("parse err: "+e.message); }
+}
+
+/* polling */
+function startPolling(){ stopPolling(); let flip=false;
+  const tick=async()=>{ if(!S.connected)return; await send(buildRead(flip?0x04:0x03)); flip=!flip; };
+  tick(); setTimeout(tick,250);
+  S.pollTimer=setInterval(tick,S.cfg.poll/1|0);
+}
+function stopPolling(){ if(S.pollTimer){clearInterval(S.pollTimer);S.pollTimer=null;} }
+
+/* ============ Controls ============ */
+async function setMosfet(kind,on){
+  let frame;
+  if(S.cfg.cmd==="fb"){
+    const target = kind==="charge"?0x01:0x00;   // 01=charge, 00=discharge
+    const state  = on?0x00:0x01;                // 00=on, 01=off
+    frame=buildWrite(0xFB,[target,state]);
+  }else{ // E1 combined: bit0 charge off, bit1 discharge off
+    const c = kind==="charge"? on : (S.info?S.info.chargeFet:true);
+    const d = kind==="discharge"? on : (S.info?S.info.dischargeFet:true);
+    const b=(c?0:1)|(d?0:2); frame=buildWrite(0xE1,[0x00,b]);
+  }
+  log(`${kind} → ${on?"ON":"OFF"}  ${hex(frame)}`);
+  await send(frame);
+  setTimeout(()=>send(buildRead(0x03)),400);
+}
+function onToggle(el){
+  if(!S.connected||S.busy) return;
+  const kind=el.dataset.kind; const cur=el.classList.contains("on"); const next=!cur;
+  const label=kind==="charge"?"Charge":"Discharge";
+  if(!next && !confirm(`Turn ${label} MOSFET OFF?\nThis will stop ${kind} current.`)) return;
+  S.busy=true; el.classList.add("busy");
+  setMosfet(kind,next).finally(()=>{ S.busy=false; el.classList.remove("busy"); });
+}
+
+/* ============ Rendering ============ */
+function tc(v){ return S.cfg.unit==="f" ? (v*9/5+32) : v; }
+function tu(){ return S.cfg.unit==="f"?"°F":"°C"; }
+
+function renderInfo(){
+  const x=S.info; if(!x)return;
+  $("socVal").textContent=x.soc;
+  const off=364.4*(1-Math.max(0,Math.min(100,x.soc))/100);
+  const arc=$("gaugeArc"); arc.style.strokeDashoffset=off;
+  arc.setAttribute("stroke", x.soc<15?"var(--red)":x.soc<40?"var(--amber)":"var(--accent)");
+  $("hVolt").textContent=x.volt.toFixed(2)+" V";
+  const cur=$("hCur"); cur.textContent=(x.cur>=0?"+":"")+x.cur.toFixed(2)+" A";
+  const pow=$("hPow"); pow.textContent=(x.power>=0?"+":"")+x.power.toFixed(1)+" W";
+  const state = x.cur>0.05?"Charging":x.cur<-0.05?"Discharging":"Idle";
+  $("hState").textContent=state;
+  $("hState").style.color = x.cur>0.05?"var(--accent2)":x.cur<-0.05?"var(--amber)":"var(--muted)";
+  $("sRemain").innerHTML=x.remain.toFixed(2)+'<small>Ah</small>';
+  $("sNominal").innerHTML=x.nominal.toFixed(2)+'<small>Ah</small>';
+  $("sCycles").textContent=x.cycles;
+  $("sTemp").innerHTML = x.temps.length? x.temps.map(t=>tc(t).toFixed(1)).join(" / ")+`<small>${tu()}</small>` : "--";
+  // MOSFET toggles
+  setTog("chgTog","chgSt",x.chargeFet);
+  setTog("dsgTog","dsgSt",x.dischargeFet);
+  renderAlarms(x);
+  drawChart();
+}
+function setTog(togId,stId,on){
+  if(S.busy) return;
+  const t=$(togId); t.classList.toggle("on",on); $(stId).textContent=on?"ON · conducting":"OFF · blocked";
+}
+function renderAlarms(x){
+  const el=$("alarm"); const active=[];
+  for(let i=0;i<PROT_BITS.length;i++) if(x.prot&(1<<i)) active.push(PROT_BITS[i]);
+  const hotT = x.temps.some(t=>t>=55), coldT=x.temps.some(t=>t<=-10);
+  if(active.length){ el.className="bad";
+    el.innerHTML=`<span style="font-size:18px">⛔</span><div>Protection active<div class="tags">${active.map(a=>`<span class="tag">${a}</span>`).join("")}</div></div>`;
+  } else if(hotT||coldT||x.soc<=10){ el.className="warn";
+    const w=[]; if(hotT)w.push("High temperature"); if(coldT)w.push("Low temperature"); if(x.soc<=10)w.push("Low charge");
+    el.innerHTML=`<span style="font-size:18px">⚠</span><div>Caution<div class="tags">${w.map(a=>`<span class="tag">${a}</span>`).join("")}</div></div>`;
+  } else { el.className="ok"; el.innerHTML=`<span style="font-size:18px">✓</span><div>All systems normal — no active protections</div>`; }
+}
+function renderCells(){
+  const cells=S.cells; if(!cells.length){ return; }
+  $("cellCount").textContent=`· ${cells.length}S`;
+  const min=Math.min(...cells), max=Math.max(...cells), avg=cells.reduce((a,b)=>a+b,0)/cells.length;
+  $("cMin").textContent=min+"mV"; $("cMax").textContent=max+"mV";
+  $("cDelta").textContent=(max-min)+"mV"; $("cAvg").textContent=Math.round(avg)+"mV";
+  $("cDelta").style.color=(max-min)>50?"var(--amber)":(max-min)>100?"var(--red)":"var(--txt)";
+  const bal=S.info?S.info.balancing:0;
+  const lo=3000, hi=Math.max(3700,max); // scale bars 3.0V..max
+  const html=cells.map((mv,i)=>{
+    const pct=Math.max(4,Math.min(100,(mv-lo)/(hi-lo)*100));
+    const cls=mv===max?"max":mv===min?"min":"";
+    const balancing=!!(bal&(1<<i));
+    return `<div class="cell"><span class="idx">${i+1}</span>
+      <div class="bar"><div class="fill ${cls}" style="width:${pct}%"></div></div>
+      <span class="mv">${(mv/1000).toFixed(3)}</span>
+      <span class="bal ${balancing?"act":""}">${balancing?"⚖":""}</span></div>`;
+  }).join("");
+  $("cells").innerHTML=html;
+}
+
+/* ============ History + chart ============ */
+function pushHist(){ const x=S.info; if(!x)return;
+  S.hist.push({t:Date.now(),volt:x.volt,cur:x.cur,pow:x.power,soc:x.soc});
+  if(S.hist.length>S.cfg.hist) S.hist.splice(0,S.hist.length-S.cfg.hist);
+}
+const META={volt:{lbl:"Voltage",u:"V",c:"#2dd4a7"},cur:{lbl:"Current",u:"A",c:"#3b82f6"},
+  pow:{lbl:"Power",u:"W",c:"#f59e0b"},soc:{lbl:"SOC",u:"%",c:"#a78bfa"}};
+function drawChart(){
+  const cv=$("chart"), dpr=window.devicePixelRatio||1;
+  const w=cv.clientWidth, h=190; cv.width=w*dpr; cv.height=h*dpr;
+  const g=cv.getContext("2d"); g.scale(dpr,dpr); g.clearRect(0,0,w,h);
+  const m=META[S.metric], data=S.hist.map(p=>p[S.metric]);
+  const pad={l:38,r:8,t:10,b:16};
+  if(data.length<2){ $("chartInfo").textContent="no data yet"; g.fillStyle="#5b6478";g.font="12px sans-serif";
+    g.fillText("collecting…",pad.l,h/2); drawAxes(g,w,h,pad,0,1,m); return; }
+  let mn=Math.min(...data), mx=Math.max(...data); if(mn===mx){mn-=1;mx+=1;} const rng=mx-mn;
+  mn-=rng*0.1; mx+=rng*0.1;
+  drawAxes(g,w,h,pad,mn,mx,m);
+  const X=i=>pad.l+(w-pad.l-pad.r)*i/(data.length-1);
+  const Y=v=>pad.t+(h-pad.t-pad.b)*(1-(v-mn)/(mx-mn));
+  // area
+  g.beginPath(); g.moveTo(X(0),Y(data[0]));
+  for(let i=1;i<data.length;i++) g.lineTo(X(i),Y(data[i]));
+  g.lineTo(X(data.length-1),h-pad.b); g.lineTo(X(0),h-pad.b); g.closePath();
+  const grad=g.createLinearGradient(0,pad.t,0,h-pad.b); grad.addColorStop(0,m.c+"44"); grad.addColorStop(1,m.c+"00");
+  g.fillStyle=grad; g.fill();
+  // line
+  g.beginPath(); g.moveTo(X(0),Y(data[0]));
+  for(let i=1;i<data.length;i++) g.lineTo(X(i),Y(data[i]));
+  g.strokeStyle=m.c; g.lineWidth=2; g.lineJoin="round"; g.stroke();
+  // last dot
+  g.beginPath(); g.arc(X(data.length-1),Y(data[data.length-1]),3.5,0,7); g.fillStyle=m.c; g.fill();
+  const last=data[data.length-1];
+  $("chartInfo").textContent=`${m.lbl}: ${last.toFixed(2)} ${m.u}  ·  min ${mn.toFixed(1)} / max ${mx.toFixed(1)}  ·  ${data.length} pts`;
+}
+function drawAxes(g,w,h,pad,mn,mx,m){
+  g.strokeStyle="#252c3b"; g.lineWidth=1; g.fillStyle="#5b6478"; g.font="10px sans-serif";
+  for(let i=0;i<=3;i++){ const y=pad.t+(h-pad.t-pad.b)*i/3; const val=mx-(mx-mn)*i/3;
+    g.beginPath();g.moveTo(pad.l,y);g.lineTo(w-pad.r,y);g.stroke();
+    g.fillText(val.toFixed(1),4,y+3); }
+}
+
+/* ============ UI wiring ============ */
+$("connectBtn").onclick=()=>{ S.connected?disconnect():connect(); };
+$("chgTog").onclick=function(){onToggle(this);};
+$("dsgTog").onclick=function(){onToggle(this);};
+$("metricSeg").onclick=e=>{ const s=e.target.closest(".seg"); if(!s)return;
+  [...document.querySelectorAll("#metricSeg .seg")].forEach(x=>x.classList.remove("on"));
+  s.classList.add("on"); S.metric=s.dataset.m; drawChart(); };
+$("csvBtn").onclick=()=>{
+  if(!S.hist.length)return;
+  let csv="time,voltage_V,current_A,power_W,soc_%\n";
+  for(const p of S.hist) csv+=`${new Date(p.t).toISOString()},${p.volt},${p.cur},${p.pow},${p.soc}\n`;
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="bms-history.csv"; a.click();
+};
+$("settingsBtn").onclick=()=>$("modal").classList.add("show");
+$("closeSet").onclick=()=>$("modal").classList.remove("show");
+$("modal").onclick=e=>{ if(e.target===$("modal")) $("modal").classList.remove("show"); };
+$("setPoll").onchange=e=>{ S.cfg.poll=+e.target.value; if(S.connected)startPolling(); };
+$("setCmd").onchange=e=>S.cfg.cmd=e.target.value;
+$("setUnit").onchange=e=>{ S.cfg.unit=e.target.value; renderInfo(); };
+$("setHist").onchange=e=>S.cfg.hist=+e.target.value;
+$("setReconn").onclick=function(){ this.classList.toggle("on"); S.cfg.reconnect=this.classList.contains("on"); };
+window.addEventListener("resize",drawChart);
+function setStatus(cls,txt){ const d=$("statusdot"); d.className="dot "+(cls||""); $("devname").title=txt; }
+if(!navigator.bluetooth) $("unsupported").classList.remove("hidden");
+drawChart();
+log("ready. tap Connect.");
+</script>
+</body>
+</html>
