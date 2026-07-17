@@ -280,6 +280,8 @@ select{background:var(--glass);color:var(--txt);border:1px solid var(--stroke);b
     <select id="setUnit"><option value="c" selected>Celsius</option><option value="f">Fahrenheit</option></select></div>
   <div class="row"><div class="k">Auto-reconnect<small>Reconnect if the link drops</small></div>
     <div class="toggle on" id="setReconn"></div></div>
+  <div class="row"><div class="k">Saved battery<small>Auto-reconnect to your paired pack</small></div>
+    <button class="btn ghost" id="forgetBtn" style="padding:8px 13px;font-size:12px">Forget</button></div>
   <div class="row"><div class="k">History length<small>Points kept for charts</small></div>
     <select id="setHist"><option value="600">600</option><option value="1800" selected>1800</option><option value="5000">5000</option></select></div>
   <button class="btn" id="closeSet" style="width:100%;margin-top:18px;justify-content:center">Done</button>
@@ -313,6 +315,8 @@ function paintIcons(root){ (root||document).querySelectorAll('[data-i]').forEach
 /* ============ Protocol (JBD / GR-Energy) ============ */
 const STARTB=0xDD, ENDB=0x77, READ=0xA5, WRITE=0x5A;
 const SVC=0xff00, C_NOTIFY=0xff01, C_WRITE=0xff02, SVC_ALT=0xffe0, C_ALT=0xffe1;
+const NAME_PREFIXES=["Xiaoxiang","xiaoxiang","JBD","JBD-","BMS","GR","GR-","Overkill","LiTime","DL-","JK","JK-","SP","Battery"];
+function bmsFilters(){ const f=[{services:[SVC]},{services:[SVC_ALT]}]; NAME_PREFIXES.forEach(x=>f.push({namePrefix:x})); return f; }
 function checksum(b){ let s=0; for(const x of b) s=(s+x)&0xFFFF; return (0x10000-s)&0xFFFF; }
 function buildRead(reg){ const cs=checksum([reg,0]); return new Uint8Array([STARTB,READ,reg,0,(cs>>8)&255,cs&255,ENDB]); }
 function buildWrite(reg,data){ const body=[reg,data.length,...data],cs=checksum(body);
@@ -332,7 +336,7 @@ function parseCells(d){ const c=[]; for(let i=0;i+1<d.length;i+=2) c.push((d[i]<
 
 /* ============ State ============ */
 const S={ dev:null,gatt:null,writeCh:null,notifyCh:null,connected:false,buf:[],pollTimer:null,
-  wantReconnect:false,info:null,cells:[],hist:[],metric:"volt",busy:false,workingCmd:null,
+  wantReconnect:false,info:null,cells:[],hist:[],metric:"volt",busy:false,workingCmd:null,savedDev:null,
   cfg:{poll:1200,cmd:"auto",unit:"c",reconnect:true,hist:1800,filter:true} };
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -348,15 +352,34 @@ function toast(msg,type){ const c=$("toasts"),d=document.createElement("div");
 /* ============ Bluetooth ============ */
 async function connect(){
   if(!navigator.bluetooth){ $("unsupported").classList.remove("hidden"); return; }
-  const opt = S.cfg.filter
-    ? {filters:[{services:[SVC]},{services:[SVC_ALT]}], optionalServices:[SVC,SVC_ALT,C_NOTIFY,C_WRITE,C_ALT]}
-    : {acceptAllDevices:true, optionalServices:[SVC,SVC_ALT,C_NOTIFY,C_WRITE,C_ALT]};
-  try{ log("requesting device… ("+(S.cfg.filter?"BMS-only":"all devices")+")");
+  try{
+    if(S.savedDev){                          // remembered battery -> connect straight to it, no picker
+      log("reconnecting saved battery "+(S.savedDev.name||S.savedDev.id));
+      S.dev=S.savedDev; S.dev.addEventListener("gattserverdisconnected",onDrop); S.wantReconnect=true;
+      try{ await openGatt(); rememberDevice(); return; }
+      catch(e){ log("saved battery not reachable: "+e.message); toast("Saved battery not in range — pick it again"); }
+    }
+    const opt = S.cfg.filter
+      ? {filters:bmsFilters(), optionalServices:[SVC,SVC_ALT,C_NOTIFY,C_WRITE,C_ALT]}
+      : {acceptAllDevices:true, optionalServices:[SVC,SVC_ALT,C_NOTIFY,C_WRITE,C_ALT]};
+    log("requesting device… ("+(S.cfg.filter?"BMS-only":"all devices")+")");
     S.dev=await navigator.bluetooth.requestDevice(opt);
-    S.dev.addEventListener("gattserverdisconnected",onDrop); S.wantReconnect=true; await openGatt();
+    S.dev.addEventListener("gattserverdisconnected",onDrop); S.wantReconnect=true;
+    await openGatt(); rememberDevice();
   }catch(e){ log("connect cancelled: "+e.message);
     if(S.cfg.filter) toast("Battery not listed? Settings → Device list → All devices","bad"); }
 }
+function rememberDevice(){ try{ if(S.dev){ localStorage.setItem("bms_id",S.dev.id); localStorage.setItem("bms_name",S.dev.name||"BMS"); } }catch(e){} }
+async function loadKnownDevice(){
+  if(!navigator.bluetooth||!navigator.bluetooth.getDevices) return;
+  let id=null; try{ id=localStorage.getItem("bms_id"); }catch(e){}
+  if(!id) return;
+  try{ const devs=await navigator.bluetooth.getDevices(); const d=devs.find(x=>x.id===id);
+    if(d){ S.savedDev=d; if(!S.connected)$("connLbl").textContent="Reconnect";
+      log("remembered battery: "+(localStorage.getItem("bms_name")||d.name||id)); } }catch(e){}
+}
+function forgetDevice(){ try{ localStorage.removeItem("bms_id"); localStorage.removeItem("bms_name"); }catch(e){}
+  S.savedDev=null; if(!S.connected)$("connLbl").textContent="Connect"; toast("Saved battery cleared"); }
 async function openGatt(){
   setStatus("warn","connecting…");
   S.gatt=await S.dev.gatt.connect();
@@ -524,6 +547,8 @@ $("setReconn").onclick=function(){ this.classList.toggle("on"); S.cfg.reconnect=
 window.addEventListener("resize",drawChart);
 function setStatus(cls,txt){ $("statusdot").className="dot "+(cls||""); }
 paintIcons(); drawChart();
+if($("forgetBtn")) $("forgetBtn").onclick=forgetDevice;
+if(navigator.bluetooth) loadKnownDevice();
 if(!navigator.bluetooth) $("unsupported").classList.remove("hidden");
 log("ready. tap Connect.");
 </script>
