@@ -8,7 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Cell BMS Pro</title>
-<link rel="manifest" href='data:application/manifest+json,{"name":"Cell BMS Pro","short_name":"BMS Pro","display":"standalone","background_color":"%23080a0f","theme_color":"%23080a0f","icons":[]}'>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{
   --bg:#080a0f; --txt:#eef1f8; --muted:#9aa4ba; --faint:#5f6a80;
@@ -604,6 +605,7 @@ $("devExport").onclick=()=>{ const L=loadLog(); if(!L.length){toast("No devices 
 $("devClear").onclick=()=>{ try{ localStorage.removeItem("bms_log"); }catch(e){} renderDevices(); toast("Saved devices cleared"); };
 if(!navigator.bluetooth) $("unsupported").classList.remove("hidden");
 log("ready. tap Connect.");
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
 </script>
 </body>
 </html>
