@@ -264,6 +264,15 @@ select{background:var(--glass);color:var(--txt);border:1px solid var(--stroke);b
   </div>
 </div>
 
+<div class="card">
+  <h3><span class="i" data-i="pack"></span> Saved devices<span class="muted" id="devCount" style="margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600"></span></h3>
+  <div id="devList"><div class="empty">No devices saved yet — connect to a battery</div></div>
+  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+    <button class="btn ghost" id="devCopy" style="padding:8px 13px;font-size:12px"><span class="i" data-i="download"></span>Copy info</button>
+    <button class="btn ghost" id="devExport" style="padding:8px 13px;font-size:12px"><span class="i" data-i="download"></span>Export JSON</button>
+    <button class="btn ghost" id="devClear" style="padding:8px 13px;font-size:12px">Clear</button>
+  </div>
+</div>
 <details class="card"><summary><span class="i" data-i="activity"></span> Debug log</summary><div id="log"></div></details>
 
 <div class="disc">Cell BMS Pro · JBD / GR-Energy BLE protocol (FF00). Not affiliated with the manufacturer. Use at your own risk.</div>
@@ -317,6 +326,44 @@ const STARTB=0xDD, ENDB=0x77, READ=0xA5, WRITE=0x5A;
 const SVC=0xff00, C_NOTIFY=0xff01, C_WRITE=0xff02, SVC_ALT=0xffe0, C_ALT=0xffe1;
 const NAME_PREFIXES=["Xiaoxiang","xiaoxiang","JBD","JBD-","BMS","GR","GR-","Overkill","LiTime","DL-","JK","JK-","SP","Battery"];
 function bmsFilters(){ const f=[{services:[SVC]},{services:[SVC_ALT]}]; NAME_PREFIXES.forEach(x=>f.push({namePrefix:x})); return f; }
+const GA_SVC=0x1800, DN_CHAR=0x2a00, DI_SVC=0x180a;
+const DI_CHARS={manufacturer:0x2a29,model:0x2a24,firmware:0x2a26,hardware:0x2a27,serial:0x2a25};
+function logRaw(reg,frame){ S.rawLog.push(frame.map(b=>b.toString(16).padStart(2,"0").toUpperCase()).join(" ")); if(S.rawLog.length>40)S.rawLog.shift(); }
+async function captureDeviceMeta(){ const meta={};
+  try{ const ga=await S.gatt.getPrimaryService(GA_SVC); const c=await ga.getCharacteristic(DN_CHAR); meta.gattName=new TextDecoder().decode(await c.readValue()).trim(); }catch(e){}
+  try{ const di=await S.gatt.getPrimaryService(DI_SVC);
+    const rd=async u=>{ try{ const c=await di.getCharacteristic(u); return new TextDecoder().decode(await c.readValue()).trim(); }catch(e){ return null; } };
+    meta.manufacturer=await rd(DI_CHARS.manufacturer); meta.model=await rd(DI_CHARS.model);
+    meta.firmware=await rd(DI_CHARS.firmware); meta.hardware=await rd(DI_CHARS.hardware); meta.serial=await rd(DI_CHARS.serial);
+  }catch(e){}
+  S.meta=meta; log("device meta: "+JSON.stringify(meta)); saveDeviceRecord();
+}
+function snapInfo(x){ return x?{voltage:+x.volt.toFixed(2),current:+x.cur.toFixed(2),power:+x.power.toFixed(1),soc:x.soc,remainingAh:+x.remain.toFixed(2),nominalAh:+x.nominal.toFixed(2),cycles:x.cycles,cellCount:x.numCell,tempsC:x.temps,chargeFet:x.chargeFet,dischargeFet:x.dischargeFet,protectionBits:x.prot}:null; }
+function loadLog(){ try{ return JSON.parse(localStorage.getItem("bms_log")||"[]"); }catch(e){ return []; } }
+function saveDeviceRecord(){ if(!S.dev)return;
+  const rec={ savedAt:new Date().toISOString(), name:S.dev.name||"(no name)", id:S.dev.id, service:S.svcUsed||null,
+    mosfetCmd:S.workingCmd||null, deviceInfo:S.meta||null, readings:snapInfo(S.info), cellsmV:(S.cells||[]).slice(), rawFrames:S.rawLog.slice(-16) };
+  let list=loadLog(); const i=list.findIndex(r=>r.id===rec.id); if(i>=0)list[i]=rec; else list.unshift(rec);
+  if(list.length>12)list=list.slice(0,12);
+  try{ localStorage.setItem("bms_log",JSON.stringify(list)); }catch(e){}
+  renderDevices();
+}
+function esc(s){ return (s==null?"":String(s)).replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c])); }
+function renderDevices(){ const el=$("devList"); if(!el)return; const list=loadLog();
+  $("devCount").textContent=list.length?list.length+" saved":"";
+  if(!list.length){ el.innerHTML='<div class="empty">No devices saved yet — connect to a battery</div>'; return; }
+  el.innerHTML=list.map(r=>{ const m=r.deviceInfo||{}, inf=r.readings||{};
+    const meta=[m.gattName&&("name "+m.gattName),m.manufacturer&&("mfr "+m.manufacturer),m.model&&("model "+m.model),m.firmware&&("fw "+m.firmware)].filter(Boolean).join(" · ");
+    const val=inf.voltage!=null?(inf.voltage+" V · "+(inf.cellCount||"?")+"S · SOC "+inf.soc+"%"+(inf.tempsC&&inf.tempsC.length?" · "+inf.tempsC.join("/")+"°C":"")):"no live data";
+    return '<div class="switch" style="align-items:flex-start"><div class="info" style="align-items:flex-start">'
+      +'<div class="ic" style="color:var(--accent)"><span class="i" data-i="pack"></span></div>'
+      +'<div style="min-width:0"><div class="nm">'+esc(r.name)+'</div>'
+      +'<div class="st">'+esc(val)+'</div>'+(meta?'<div class="st">'+esc(meta)+'</div>':'')
+      +'<div class="st faint">'+new Date(r.savedAt).toLocaleString()+' · via '+(r.service||"?")+(r.mosfetCmd?' · cmd '+r.mosfetCmd.toUpperCase():'')+' · '+(r.rawFrames||[]).length+' frames</div>'
+      +'</div></div></div>';
+  }).join("");
+  paintIcons(el);
+}
 function checksum(b){ let s=0; for(const x of b) s=(s+x)&0xFFFF; return (0x10000-s)&0xFFFF; }
 function buildRead(reg){ const cs=checksum([reg,0]); return new Uint8Array([STARTB,READ,reg,0,(cs>>8)&255,cs&255,ENDB]); }
 function buildWrite(reg,data){ const body=[reg,data.length,...data],cs=checksum(body);
@@ -336,7 +383,7 @@ function parseCells(d){ const c=[]; for(let i=0;i+1<d.length;i+=2) c.push((d[i]<
 
 /* ============ State ============ */
 const S={ dev:null,gatt:null,writeCh:null,notifyCh:null,connected:false,buf:[],pollTimer:null,
-  wantReconnect:false,info:null,cells:[],hist:[],metric:"volt",busy:false,workingCmd:null,savedDev:null,
+  wantReconnect:false,info:null,cells:[],hist:[],metric:"volt",busy:false,workingCmd:null,savedDev:null,gotCells:false,svcUsed:null,meta:null,rawLog:[],
   cfg:{poll:1200,cmd:"auto",unit:"c",reconnect:true,hist:1800,filter:true} };
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -360,8 +407,8 @@ async function connect(){
       catch(e){ log("saved battery not reachable: "+e.message); toast("Saved battery not in range — pick it again"); }
     }
     const opt = S.cfg.filter
-      ? {filters:bmsFilters(), optionalServices:[SVC,SVC_ALT,C_NOTIFY,C_WRITE,C_ALT]}
-      : {acceptAllDevices:true, optionalServices:[SVC,SVC_ALT,C_NOTIFY,C_WRITE,C_ALT]};
+      ? {filters:bmsFilters(), optionalServices:[SVC,SVC_ALT,C_NOTIFY,C_WRITE,C_ALT,GA_SVC,DI_SVC]}
+      : {acceptAllDevices:true, optionalServices:[SVC,SVC_ALT,C_NOTIFY,C_WRITE,C_ALT,GA_SVC,DI_SVC]};
     log("requesting device… ("+(S.cfg.filter?"BMS-only":"all devices")+")");
     S.dev=await navigator.bluetooth.requestDevice(opt);
     S.dev.addEventListener("gattserverdisconnected",onDrop); S.wantReconnect=true;
@@ -384,23 +431,23 @@ async function openGatt(){
   setStatus("warn","connecting…");
   S.gatt=await S.dev.gatt.connect();
   let svc,writeCh,notifyCh;
-  try{ svc=await S.gatt.getPrimaryService(SVC); writeCh=await svc.getCharacteristic(C_WRITE); notifyCh=await svc.getCharacteristic(C_NOTIFY); }
-  catch(e){ log("FF00 not found, trying FFE0…"); svc=await S.gatt.getPrimaryService(SVC_ALT); writeCh=await svc.getCharacteristic(C_ALT); notifyCh=writeCh; }
+  try{ svc=await S.gatt.getPrimaryService(SVC); writeCh=await svc.getCharacteristic(C_WRITE); notifyCh=await svc.getCharacteristic(C_NOTIFY); S.svcUsed="FF00"; }
+  catch(e){ log("FF00 not found, trying FFE0…"); svc=await S.gatt.getPrimaryService(SVC_ALT); writeCh=await svc.getCharacteristic(C_ALT); notifyCh=writeCh; S.svcUsed="FFE0"; }
   S.writeCh=writeCh; S.notifyCh=notifyCh;
   await notifyCh.startNotifications(); notifyCh.addEventListener("characteristicvaluechanged",onData);
   S.connected=true; S.buf=[];
   $("connLbl").textContent="Disconnect"; setStatus("on","connected");
-  S.gotData=false; toast((S.dev.name||"BMS")+" connected — reading…","ok"); log("connected id="+(S.dev.id||"?")); startPolling();
+  S.gotData=false; S.gotCells=false; S.rawLog=[]; S.meta=null; toast((S.dev.name||"BMS")+" connected — reading…","ok"); log("connected id="+(S.dev.id||"?")); startPolling(); captureDeviceMeta();
   clearTimeout(S.probeTimer); S.probeTimer=setTimeout(()=>{ if(S.connected&&!S.gotData){ toast("No BMS data on this device. Likely the wrong one — pick another.","bad"); S.wantReconnect=false; disconnect(); } },6500);
 }
 function onDrop(){
-  S.connected=false; stopPolling(); setStatus("","disconnected"); $("connLbl").textContent="Connect"; log("link dropped");
+  S.connected=false; saveDeviceRecord(); stopPolling(); setStatus("","disconnected"); $("connLbl").textContent="Connect"; log("link dropped");
   if(S.wantReconnect && S.cfg.reconnect){ setStatus("warn","reconnecting…"); toast("Link dropped — reconnecting…");
     setTimeout(async()=>{ if(!S.wantReconnect)return; try{ await openGatt(); }
       catch(e){ log("reconnect failed, retrying…"); if(S.wantReconnect&&S.cfg.reconnect) setTimeout(onDrop,3000); } },1500);
   }
 }
-function disconnect(){ S.wantReconnect=false; stopPolling();
+function disconnect(){ S.wantReconnect=false; saveDeviceRecord(); stopPolling();
   try{ S.gatt&&S.gatt.connected&&S.gatt.disconnect(); }catch(e){}
   S.connected=false; setStatus("","disconnected"); $("connLbl").textContent="Connect"; log("disconnected by user"); }
 async function send(u8){ if(!S.writeCh)return;
@@ -411,11 +458,11 @@ function onData(ev){ const v=ev.target.value; for(let i=0;i<v.byteLength;i++) S.
     const st=S.buf.indexOf(STARTB); if(st<0){S.buf=[];break;} if(st>0)S.buf.splice(0,st);
     if(S.buf.length<4)break; const len=S.buf[3],total=4+len+3; if(S.buf.length<total)break;
     if(S.buf[total-1]!==ENDB){S.buf.shift();continue;}
-    const reg=S.buf[1],payload=S.buf.slice(4,4+len); S.buf.splice(0,total); handleFrame(reg,payload);
+    const reg=S.buf[1],payload=S.buf.slice(4,4+len),frame=S.buf.slice(0,total); S.buf.splice(0,total); logRaw(reg,frame); handleFrame(reg,payload);
   } }
 function handleFrame(reg,payload){ try{
-    if(reg===0x03){ S.gotData=true; clearTimeout(S.probeTimer); S.info=parseInfo(payload); pushHist(); renderInfo(); }
-    else if(reg===0x04){ S.cells=parseCells(payload); renderCells(); }
+    if(reg===0x03){ const first=!S.gotData; S.gotData=true; clearTimeout(S.probeTimer); S.info=parseInfo(payload); pushHist(); renderInfo(); if(first) saveDeviceRecord(); }
+    else if(reg===0x04){ const first=!S.gotCells; S.gotCells=true; S.cells=parseCells(payload); renderCells(); if(first) saveDeviceRecord(); }
   }catch(e){ log("parse err: "+e.message); } }
 function startPolling(){ stopPolling(); let flip=false;
   const tick=async()=>{ if(!S.connected)return; await send(buildRead(flip?0x04:0x03)); flip=!flip; };
@@ -549,6 +596,12 @@ function setStatus(cls,txt){ $("statusdot").className="dot "+(cls||""); }
 paintIcons(); drawChart();
 if($("forgetBtn")) $("forgetBtn").onclick=forgetDevice;
 if(navigator.bluetooth) loadKnownDevice();
+renderDevices();
+$("devCopy").onclick=async()=>{ const L=loadLog(); if(!L.length){toast("No devices saved yet");return;} const t=JSON.stringify(L,null,2);
+  try{ await navigator.clipboard.writeText(t); toast("Device info copied to clipboard","ok"); }catch(e){ log("=== DEVICE LOG (select & copy) ===\n"+t); toast("Clipboard blocked — dumped to Debug log","bad"); } };
+$("devExport").onclick=()=>{ const L=loadLog(); if(!L.length){toast("No devices saved yet");return;} const t=JSON.stringify(L,null,2);
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([t],{type:"application/json"})); a.download="bms-devices.json"; a.click(); toast("Exported JSON","ok"); };
+$("devClear").onclick=()=>{ try{ localStorage.removeItem("bms_log"); }catch(e){} renderDevices(); toast("Saved devices cleared"); };
 if(!navigator.bluetooth) $("unsupported").classList.remove("hidden");
 log("ready. tap Connect.");
 </script>
