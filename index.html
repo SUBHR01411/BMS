@@ -487,10 +487,10 @@ async function setMosfet(kind,on){
     toast(`${cap(kind)} → ${on?"ON":"OFF"} · ${name.toUpperCase()}…`);
     log(`${kind} ${on?"ON":"OFF"} via ${name}: ${hex(CMDS[name](kind,on))}`);
     await send(CMDS[name](kind,on));
-    if(await verifyFet(kind,on,1600)){ S.workingCmd=name; toast(`${cap(kind)} MOSFET ${on?"ON":"OFF"}`,"ok"); return true; }
+    if(await verifyFet(kind,on,5000)){ S.workingCmd=name; toast(`${cap(kind)} MOSFET ${on?"ON":"OFF"}`,"ok"); return true; }
     log(`${name} did not confirm, trying next…`);
   }
-  toast(`Couldn't switch ${kind}. BMS didn't confirm — try the other mode in Settings.`,"bad");
+  toast(`Sent ${kind} ${on?"ON":"OFF"} — pack hasn't reported back yet. It can take a few seconds, or it may be soft-locked. Watch the state.`,"bad");
   return false;
 }
 function onToggle(el){
