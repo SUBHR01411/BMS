@@ -28,6 +28,11 @@ h1 .b{width:36px;height:36px;border-radius:11px;background:linear-gradient(140de
 .btn.cut{background:linear-gradient(135deg,#ff5468,#e23b50);color:#fff;box-shadow:0 12px 34px rgba(255,84,104,.42)}
 .btn:active{transform:scale(.98)}.btn:disabled{opacity:.5}
 .hint{color:var(--muted);font-size:12px;text-align:center;line-height:1.6}
+details{color:var(--muted);font-size:12px;margin-top:2px}
+details summary{cursor:pointer;text-align:center;list-style:none}
+.logbar{display:flex;gap:8px;margin:10px 0}
+.logbar button{flex:1;padding:9px;border-radius:10px;border:1px solid var(--stroke);background:var(--card);color:var(--txt);font-size:12px;font-weight:600}
+#log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;background:rgba(0,0,0,.32);border-radius:10px;padding:10px;white-space:pre-wrap;max-height:180px;overflow:auto}
 </style>
 </head>
 <body>
@@ -42,11 +47,32 @@ h1 .b{width:36px;height:36px;border-radius:11px;background:linear-gradient(140de
   <button class="btn" id="btn">Connect</button>
   <div class="hint" id="hint">Chrome or Edge on Android. Green = battery still live · Red = discharge cut.</div>
 
+  <details id="logbox">
+    <summary>Debug log</summary>
+    <div class="logbar">
+      <button id="dl">⬇ Download log</button>
+      <button id="clr">Clear</button>
+    </div>
+    <div id="log"></div>
+  </details>
+
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const hx=a=>[...a].map(b=>b.toString(16).padStart(2,"0").toUpperCase()).join(" ");
 const S={dev:null,gatt:null,write:null,notify:null,buf:[],info:null,busy:false,connected:false,framing:"jbd"};
+
+/* ---- log ---- */
+let SESSION=[]; try{SESSION=JSON.parse(localStorage.getItem("bms_session_log")||"[]");}catch(e){}
+function rec(ev,detail){const e={t:new Date().toISOString(),dev:(S.dev&&S.dev.name)||"-",proto:S.framing,ev,detail:detail||""};
+  SESSION.push(e); if(SESSION.length>4000)SESSION.splice(0,SESSION.length-4000);
+  try{localStorage.setItem("bms_session_log",JSON.stringify(SESSION));}catch(e){}
+  const el=$("log"); if(el)el.textContent=(`${e.t.slice(11,19)} [${S.framing}] ${ev}${detail?": "+detail:""}\n`+el.textContent).slice(0,10000);}
+function dlLog(){if(!SESSION.length){alert("Log is empty");return;}
+  const txt="Cell Seek3r log\n"+SESSION.map(e=>`${e.t} [${e.proto}] [${e.dev}] ${e.ev}${e.detail?": "+e.detail:""}`).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/plain"}));a.download="cellseek3r-log.txt";a.click();}
+function clrLog(){SESSION=[];try{localStorage.removeItem("bms_session_log");}catch(e){}const el=$("log");if(el)el.textContent="(cleared)";}
 
 /* UUIDs */
 const JBD_SVC=0xff00,JBD_N=0xff01,JBD_W=0xff02,ALT_SVC=0xffe0,ALT_C=0xffe1,DALY_SVC=0xfff0,DALY_N=0xfff1,DALY_W=0xfff2;
@@ -70,8 +96,8 @@ const jkDischarge=on=>jkFrame(0xAC,on?1:0);
 const jkReadAll=()=>jkFrame(0x96,0);
 
 /* transport & parse */
-async function send(u8){if(!S.write)return;try{if(S.write.writeValueWithoutResponse)await S.write.writeValueWithoutResponse(u8);else await S.write.writeValue(u8);}catch(e){try{await S.write.writeValue(u8);}catch(e2){}}}
-async function sendResp(u8){if(!S.write)return;try{await S.write.writeValue(u8);}catch(e){}}
+async function send(u8){if(!S.write)return;rec("TX",hx(u8));try{if(S.write.writeValueWithoutResponse)await S.write.writeValueWithoutResponse(u8);else await S.write.writeValue(u8);}catch(e){try{await S.write.writeValue(u8);}catch(e2){rec("TX err",e2.message);}}}
+async function sendResp(u8){if(!S.write)return;rec("TX/resp",hx(u8));try{await S.write.writeValue(u8);}catch(e){}}
 function readStatusCmd(){if(S.framing==="daly")return dalyReadMos();if(S.framing==="jk")return jkReadAll();return jbdRead(0x03);}
 function onData(ev){const v=ev.target.value;const chunk=[];for(let i=0;i<v.byteLength;i++)chunk.push(v.getUint8(i));
   if(S.framing==="jk")return;for(const b of chunk)S.buf.push(b);
@@ -80,13 +106,14 @@ function parseJbd(){let g=0;while(S.buf.length>=7&&g++<40){
   const st=S.buf.indexOf(0xDD);if(st<0){S.buf=[];break;}if(st>0)S.buf.splice(0,st);
   if(S.buf.length<4)break;const len=S.buf[3],total=4+len+3;if(S.buf.length<total)break;
   if(S.buf[total-1]!==0x77){S.buf.shift();continue;}
-  const reg=S.buf[1],p=S.buf.slice(4,4+len);S.buf.splice(0,total);
-  if(reg===0x03){try{const u16=i=>(p[i]<<8)|p[i+1];S.info={voltage:u16(0)/100,soc:p[19],chargeFet:!!(p[20]&1),dischargeFet:!!(p[20]&2)};render();}catch(e){}}
+  const reg=S.buf[1],p=S.buf.slice(4,4+len),frame=S.buf.slice(0,total);S.buf.splice(0,total);
+  rec("RX",hx(frame));
+  if(reg===0x03){try{const u16=i=>(p[i]<<8)|p[i+1];S.info={voltage:u16(0)/100,soc:p[19],chargeFet:!!(p[20]&1),dischargeFet:!!(p[20]&2)};rec("STATUS","V="+S.info.voltage.toFixed(2)+" SOC="+S.info.soc+" dsg="+S.info.dischargeFet);render();}catch(e){}}
 }}
 function parseDaly(){let g=0;while(S.buf.length>=13&&g++<40){
   const st=S.buf.indexOf(0xA5);if(st<0){S.buf=[];break;}if(st>0)S.buf.splice(0,st);
   if(S.buf.length<13)break;const frame=S.buf.slice(0,13);let s=0;for(let i=0;i<12;i++)s=(s+frame[i])&0xFF;
-  if(s!==frame[12]){S.buf.shift();continue;}S.buf.splice(0,13);
+  if(s!==frame[12]){S.buf.shift();continue;}S.buf.splice(0,13);rec("RX",hx(frame));
   const cmd=frame[2],d=frame.slice(4,12);
   if(cmd===0x93){S.info=Object.assign({},S.info,{chargeFet:!!d[1],dischargeFet:!!d[2]});render();}
   else if(cmd===0x90){S.info=Object.assign({},S.info,{voltage:((d[0]<<8)|d[1])/10,soc:Math.round(((d[6]<<8)|d[7])/10)});render();}
@@ -105,8 +132,8 @@ async function doDischarge(want){
     ["Daly",async()=>{await send(dalyDischarge(want));}],
     ["JK",async()=>{await send(jkReadAll());await sleep(200);await send(jkDischarge(want));}]
   ];
-  for(const [n,run] of V){setBadge("wait","Cutting…","method "+n);try{await run();}catch(e){}if(await confirm(want,4000))return n;}
-  return null;
+  for(const [n,run] of V){setBadge("wait","Cutting…","method "+n);rec("attempt",n);try{await run();}catch(e){}if(await confirm(want,4000)){rec("OK",n);return n;}}
+  rec("FAILED","all methods exhausted");return null;
 }
 
 /* connect */
@@ -132,20 +159,21 @@ async function connect(){
       ],
       optionalServices:ALL_SVCS
     });
+    rec("SELECTED",(S.dev.name||"BMS")+" id="+S.dev.id);
     setBadge("wait","Connecting…",S.dev.name||"BMS");
     S.gatt=await S.dev.gatt.connect();
-    await discover();
+    await discover();rec("SERVICE",S.framing);
     S.buf=[];await S.notify.startNotifications();S.notify.addEventListener("characteristicvaluechanged",onData);
-    S.connected=true;
+    S.connected=true;rec("connected");
     setBadge("wait","Reading…",S.dev.name||"BMS");
     for(let i=0;i<8&&(!S.info||S.info.dischargeFet==null);i++){await send(readStatusCmd());await sleep(350);}
-  }catch(e){S.connected=false;}
+  }catch(e){rec("error",e.message);S.connected=false;}
   finally{S.busy=false;render();}
 }
 async function cut(){
   if(!S.connected||S.busy)return;
-  S.busy=true;render();
-  try{await doDischarge(false);}catch(e){}
+  S.busy=true;render();rec("CUT requested");
+  try{const worked=await doDischarge(false);rec("cut result",worked||"unconfirmed");}catch(e){rec("cut err",e.message);}
   finally{S.busy=false;render();}
 }
 
@@ -163,7 +191,8 @@ function render(){
 }
 
 $("btn").onclick=()=>{ if(S.connected && S.info && S.info.dischargeFet===false) connect(); else if(S.connected) cut(); else connect(); };
-render();
+$("dl").onclick=dlLog; $("clr").onclick=clrLog;
+rec("ready");render();
 </script>
 </body>
 </html>
