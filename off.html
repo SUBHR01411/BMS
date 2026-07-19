@@ -3,242 +3,231 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#080a0f">
+<meta name="theme-color" content="#0a0f1e">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <title>Cell Seek3r</title>
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{--bg:#0c0916;--card:rgba(160,130,255,.08);--stroke:rgba(168,139,250,.20);--txt:#efeaff;--muted:#a99ec9;--red:#ff5b8a;--green:#22c55e;--amber:#fbbf24;--accent:#b794f6;--purple:#a855f7;--purple2:#7c3aed}
+:root{--bg:#0a0f1e;--card:rgba(90,160,255,.09);--stroke:rgba(120,180,255,.22);--txt:#eaf2ff;--muted:#93a4c4;--red:#ff5b7a;--green:#22c55e;--amber:#fbbf24;--purple:#22d3ee;--purple2:#2563eb}
 html,body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-body{max-width:520px;margin:0 auto;min-height:100vh;padding:24px 18px calc(30px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
-body::before{content:"";position:fixed;inset:-10%;z-index:-1;background:radial-gradient(46% 32% at 16% -2%,rgba(168,85,247,.30),transparent 62%),radial-gradient(42% 30% at 94% 10%,rgba(139,92,246,.24),transparent 60%),radial-gradient(52% 42% at 62% 110%,rgba(217,70,239,.16),transparent 60%)}
-h1{font-size:21px;margin:0;display:flex;align-items:center;gap:9px}
-h1 .b{width:34px;height:34px;border-radius:10px;background:linear-gradient(140deg,var(--purple),var(--purple2));display:grid;place-items:center;font-size:18px;box-shadow:0 4px 14px rgba(139,92,246,.5)}
+body{max-width:520px;margin:0 auto;min-height:100vh;padding:26px 18px calc(30px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
+body::before{content:"";position:fixed;inset:-10%;z-index:-1;background:radial-gradient(46% 32% at 16% -2%,rgba(34,211,238,.26),transparent 62%),radial-gradient(42% 30% at 94% 10%,rgba(59,130,246,.24),transparent 60%),radial-gradient(52% 42% at 62% 110%,rgba(56,189,248,.16),transparent 60%)}
+h1{font-size:22px;margin:0;display:flex;align-items:center;gap:9px}
+h1 .b{width:34px;height:34px;border-radius:10px;background:linear-gradient(140deg,var(--purple),var(--purple2));display:grid;place-items:center;font-size:18px;box-shadow:0 4px 14px rgba(37,99,235,.55)}
 .sub{color:var(--muted);font-size:13px;margin:-4px 0 2px}
-.field{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--stroke);border-radius:12px;padding:11px 13px}
-.field label{font-size:13px;color:var(--muted)}
-select{background:#180f2e;color:var(--txt);border:1px solid var(--stroke);border-radius:9px;padding:8px 10px;font-size:13px;font-weight:600}
-.seg{display:flex;gap:8px}
-.seg button{flex:1;padding:11px;border-radius:12px;border:1px solid var(--stroke);background:var(--card);color:var(--muted);font-weight:700;font-size:14px}
-.seg button.on[data-m=off]{background:rgba(168,85,247,.20);border-color:var(--purple);color:#e0c8ff}
-.seg button.on[data-m=on]{background:rgba(34,197,94,.16);border-color:var(--green);color:#8ff0b4}
-.big{width:100%;padding:22px;border-radius:18px;border:none;font-size:19px;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--purple),var(--purple2));box-shadow:0 10px 30px rgba(139,92,246,.42),inset 0 1px 0 rgba(255,255,255,.25)}
-.big.on{background:linear-gradient(135deg,var(--green),#16a34a);box-shadow:0 10px 30px rgba(34,197,94,.3)}
+.badge{text-align:center;padding:22px 16px;border-radius:18px;font-size:21px;font-weight:800;letter-spacing:1px;backdrop-filter:blur(12px)}
+.badge.idle{background:var(--card);color:var(--muted);border:1px solid var(--stroke);font-size:15px;font-weight:600;letter-spacing:0}
+.badge.green{background:rgba(34,197,94,.15);color:#9af0bf;border:1px solid rgba(34,197,94,.5)}
+.badge.red{background:rgba(255,84,104,.16);color:#ffb0c2;border:1px solid rgba(255,84,104,.55);animation:pulse 1.6s infinite}
+.badge.wait{background:rgba(251,191,36,.13);color:#ffd98a;border:1px solid rgba(251,191,36,.45);font-size:15px;font-weight:650;letter-spacing:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.72}}
+.card{background:var(--card);border:1px solid var(--stroke);border-radius:16px;padding:14px 16px;backdrop-filter:blur(12px)}
+.name{font-size:15px;font-weight:700;word-break:break-all}
+.rowv{display:flex;justify-content:space-between;margin-top:9px;font-size:14px}.rowv .k{color:var(--muted)}
+.big{width:100%;padding:22px;border-radius:18px;border:none;font-size:19px;font-weight:800;color:#05121f;background:linear-gradient(135deg,var(--purple),var(--purple2));box-shadow:0 10px 30px rgba(37,99,235,.42),inset 0 1px 0 rgba(255,255,255,.35)}
+.big.red{background:linear-gradient(135deg,#ff5468,#e23b50);box-shadow:0 10px 30px rgba(255,84,104,.4)}
 .big:active{transform:scale(.98)} .big:disabled{opacity:.55}
-.card{background:var(--card);border:1px solid var(--stroke);border-radius:16px;padding:16px;backdrop-filter:blur(14px)}
-.name{font-size:16px;font-weight:700;word-break:break-all}
-.rowv{display:flex;justify-content:space-between;margin-top:10px;font-size:14px}.rowv .k{color:var(--muted)}
-.badge{margin-top:14px;text-align:center;padding:16px;border-radius:14px;font-size:20px;font-weight:800;letter-spacing:.5px}
-.badge.off{background:rgba(34,197,94,.14);color:#8ff0b4;border:1px solid rgba(34,197,94,.4)}
-.badge.onb{background:rgba(255,84,104,.14);color:#ffb0ba;border:1px solid rgba(255,84,104,.4)}
-.badge.wait{background:rgba(251,191,36,.12);color:#ffd98a;border:1px solid rgba(251,191,36,.4);font-size:15px}
-.msg{color:var(--muted);font-size:13px;text-align:center;min-height:18px;margin-top:8px}
-.hint{color:#5f6a80;font-size:12px;text-align:center;line-height:1.6}
+.hint{color:#6f6591;font-size:12px;text-align:center;line-height:1.6}
 details{color:var(--muted);font-size:11px}
-#log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;background:rgba(0,0,0,.3);border-radius:10px;padding:10px;white-space:pre-wrap;max-height:160px;overflow:auto;margin-top:8px}
+#log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;background:rgba(0,0,0,.3);border-radius:10px;padding:10px;white-space:pre-wrap;max-height:150px;overflow:auto;margin-top:8px}
 .hidden{display:none}
 </style>
 </head>
 <body>
   <h1><span class="b">🔎</span> Cell Seek3r</h1>
-  <div class="sub">Pick a cell — it turns discharge off automatically.</div>
+  <div class="sub">Connect a cell, then cut its discharge in one tap.</div>
 
-  <div class="field"><label>Protocol</label>
-    <select id="proto">
-      <option value="auto">Auto (JBD FF00)</option>
-      <option value="jbd">JBD / Xiaoxiang / GR / LOSSIGY / Overkill</option>
-      <option value="daly">Daly (0xD9)</option>
-      <option value="jk">JK / JiKong (0xAC)</option>
-    </select>
-  </div>
-
-  <div class="seg" id="seg">
-    <button data-m="off" class="on">Turn discharge OFF</button>
-    <button data-m="on">Turn ON</button>
-  </div>
-
-  <button class="big" id="go">Pick cell →</button>
+  <div class="badge idle" id="badge">Tap “Pick cell” to start</div>
 
   <div class="card hidden" id="result">
-    <div class="name" id="rName">—</div>
-    <div class="rowv"><span class="k">Protocol</span><span id="rProto">—</span></div>
-    <div class="rowv"><span class="k">Voltage</span><span id="rV">— V</span></div>
-    <div class="rowv"><span class="k">State of charge</span><span id="rSoc">— %</span></div>
-    <div class="badge wait" id="rBadge">Working…</div>
-    <div class="msg" id="rMsg"></div>
+    <div class="name" id="name">—</div>
+    <div class="rowv"><span class="k">Voltage</span><span id="rv">— V</span></div>
+    <div class="rowv"><span class="k">State of charge</span><span id="rsoc">— %</span></div>
   </div>
 
-  <div class="hint">Your packs are JBD (Auto works). Daly/JK are supported with their documented commands but can't always be auto‑confirmed. Chrome/Edge only.</div>
+  <button class="big" id="bigbtn">Pick cell →</button>
+  <button id="near" style="display:none;width:100%;padding:14px;border-radius:14px;border:1px solid var(--stroke);background:var(--card);color:var(--txt);font-weight:700;font-size:14px;backdrop-filter:blur(12px)">⚡ Nearest paired cell</button>
+
+  <div class="hint">Green = still discharging (live). Press Discharge to cut it → turns red “Discharge done”. Chrome/Edge only.</div>
   <div style="display:flex;gap:8px">
     <button id="dl" style="flex:1;padding:11px;border-radius:11px;border:1px solid var(--stroke);background:var(--card);color:var(--txt);font-weight:600;font-size:13px">⬇ Download log</button>
     <button id="clr" style="padding:11px 14px;border-radius:11px;border:1px solid var(--stroke);background:var(--card);color:var(--muted);font-size:13px">Clear</button>
   </div>
-  <details><summary>Session log (recorded every connection)</summary><div id="log"></div></details>
+  <details><summary>Session log</summary><div id="log"></div></details>
 
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const hx=a=>[...a].map(b=>b.toString(16).padStart(2,"0").toUpperCase()).join(" ");
-let MODE="off";
-const S={dev:null,gatt:null,write:null,notify:null,buf:[],info:null,busy:false,proto:"jbd",framing:"jbd"};
+const S={dev:null,gatt:null,write:null,notify:null,buf:[],info:null,busy:false,proto:"auto",framing:"jbd"};
+let stage="idle";
 
-/* ---------- persistent session log ---------- */
+/* ---- log ---- */
 let SESSION=[]; try{SESSION=JSON.parse(localStorage.getItem("bms_session_log")||"[]");}catch(e){}
-function rec(ev,detail){const e={t:new Date().toISOString(),dev:(S.dev&&S.dev.name)||"-",proto:S.proto,ev,detail:detail||""};
+function rec(ev,detail){const e={t:new Date().toISOString(),dev:(S.dev&&S.dev.name)||"-",proto:S.framing,ev,detail:detail||""};
   SESSION.push(e); if(SESSION.length>4000)SESSION.splice(0,SESSION.length-4000);
   try{localStorage.setItem("bms_session_log",JSON.stringify(SESSION));}catch(e){}
-  const el=$("log"); if(el)el.textContent=(`${e.t.slice(11,19)} [${S.proto}] ${ev}${detail?": "+detail:""}\n`+el.textContent).slice(0,9000);}
+  const el=$("log"); if(el)el.textContent=(`${e.t.slice(11,19)} [${S.framing}] ${ev}${detail?": "+detail:""}\n`+el.textContent).slice(0,9000);}
 function log(m){rec("log",m);}
 function dlLog(){if(!SESSION.length){alert("Log is empty");return;}
-  const txt="Universal BMS discharge log\n"+SESSION.map(e=>`${e.t} [${e.proto}] [${e.dev}] ${e.ev}${e.detail?": "+e.detail:""}`).join("\n");
+  const txt="Cell Seek3r log\n"+SESSION.map(e=>`${e.t} [${e.proto}] [${e.dev}] ${e.ev}${e.detail?": "+e.detail:""}`).join("\n");
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/plain"}));a.download="bms-session-log.txt";a.click();}
 function clrLog(){SESSION=[];try{localStorage.removeItem("bms_session_log");}catch(e){}const el=$("log");if(el)el.textContent="(cleared)";}
 
-/* ---------- UUIDs ---------- */
-const JBD_SVC=0xff00,JBD_N=0xff01,JBD_W=0xff02,ALT_SVC=0xffe0,ALT_C=0xffe1;
-const DALY_SVC=0xfff0,DALY_N=0xfff1,DALY_W=0xfff2;
+/* ---- UUIDs ---- */
+const JBD_SVC=0xff00,JBD_N=0xff01,JBD_W=0xff02,ALT_SVC=0xffe0,ALT_C=0xffe1,DALY_SVC=0xfff0,DALY_N=0xfff1,DALY_W=0xfff2;
 const ALL_SVCS=[0xff00,0xff01,0xff02,0xffe0,0xffe1,0xfff0,0xfff1,0xfff2];
 
-/* ---------- JBD (DD/5A/A5) ---------- */
+/* ---- JBD ---- */
 function jbdCs(b){let s=0;for(const x of b)s=(s+x)&0xFFFF;return (0x10000-s)&0xFFFF;}
 function jbdRead(reg){const c=jbdCs([reg,0]);return new Uint8Array([0xDD,0xA5,reg,0,(c>>8)&255,c&255,0x77]);}
 function jbdWrite(reg,data){const b=[reg,data.length,...data],c=jbdCs(b);return new Uint8Array([0xDD,0x5A,reg,data.length,...data,(c>>8)&255,c&255,0x77]);}
-const jbdE1=on=>jbdWrite(0xE1,[0x00,on?0x00:0x02]);   // DD 5A E1 02 00 (00 both on / 02 dsg off)
-const jbdFb=on=>jbdWrite(0xFB,[0x00,on?0x00:0x01]);   // DD 5A FB 02 00 (00 on / 01 off)
+const jbdE1=on=>jbdWrite(0xE1,[0x00,on?0x00:0x02]);
+const jbdFb=on=>jbdWrite(0xFB,[0x00,on?0x00:0x01]);
 const FAC_ENTER=new Uint8Array([0xDD,0x5A,0x00,0x02,0x56,0x78,0xFF,0x30,0x77]);
 const FAC_EXIT =new Uint8Array([0xDD,0x5A,0x01,0x02,0x28,0x28,0xFF,0xAD,0x77]);
-
-/* ---------- Daly (A5, sum checksum) ---------- */
+/* ---- Daly ---- */
 function dalyFrame(cmd,d8){const f=[0xA5,0x40,cmd,0x08,...d8];let s=0;for(const b of f)s=(s+b)&0xFF;f.push(s);return new Uint8Array(f);}
-const dalyDischarge=on=>dalyFrame(0xD9,[on?1:0,0,0,0,0,0,0,0]);   // D9 = discharge MOS (01 on / 00 off)
-const dalyReadMos =()=>dalyFrame(0x93,[0,0,0,0,0,0,0,0]);         // 93 = state (charge/discharge MOS)
-const dalyReadSoc =()=>dalyFrame(0x90,[0,0,0,0,0,0,0,0]);
+const dalyDischarge=on=>dalyFrame(0xD9,[on?1:0,0,0,0,0,0,0,0]);
+const dalyReadMos=()=>dalyFrame(0x93,[0,0,0,0,0,0,0,0]);
+/* ---- JK ---- */
+function jkFrame(reg,value){const f=new Array(20).fill(0);f[0]=0xAA;f[1]=0x55;f[2]=0x90;f[3]=0xEB;f[4]=reg;f[5]=0x04;f[6]=value&0xFF;let s=0;for(let i=0;i<19;i++)s=(s+f[i])&0xFF;f[19]=s;return new Uint8Array(f);}
+const jkDischarge=on=>jkFrame(0xAC,on?1:0);
+const jkReadAll=()=>jkFrame(0x96,0);
 
-/* ---------- JK (AA 55 90 EB, sum checksum) ---------- */
-function jkFrame(reg,value){const f=new Array(20).fill(0);f[0]=0xAA;f[1]=0x55;f[2]=0x90;f[3]=0xEB;f[4]=reg;f[5]=0x04;
-  f[6]=value&0xFF;f[7]=(value>>8)&0xFF;f[8]=(value>>16)&0xFF;f[9]=(value>>24)&0xFF;
-  let s=0;for(let i=0;i<19;i++)s=(s+f[i])&0xFF;f[19]=s;return new Uint8Array(f);}
-const jkDischarge=on=>jkFrame(0xAC,on?1:0);   // register 0xAC = discharge switch
-const jkReadAll  =()=>jkFrame(0x96,0);
-
-/* ---------- transport ---------- */
+/* ---- transport & parse ---- */
 async function send(u8){if(!S.write)return; rec("TX",hx(u8)); try{if(S.write.writeValueWithoutResponse)await S.write.writeValueWithoutResponse(u8);else await S.write.writeValue(u8);}catch(e){try{await S.write.writeValue(u8);}catch(e2){log("write err "+e2.message);}}}
+async function sendResp(u8){if(!S.write)return;rec("TX/resp",hx(u8));try{await S.write.writeValue(u8);}catch(e){}}
 function readStatusCmd(){ if(S.framing==="daly")return dalyReadMos(); if(S.framing==="jk")return jkReadAll(); return jbdRead(0x03); }
-
 function onData(ev){const v=ev.target.value;const chunk=[];for(let i=0;i<v.byteLength;i++)chunk.push(v.getUint8(i));
-  if(S.framing==="jk"){ rec("RX",hx(chunk)); return; }          // JK frames are large/variable — logged only
+  if(S.framing==="jk"){rec("RX",hx(chunk));return;}
   for(const b of chunk)S.buf.push(b);
-  if(S.framing==="daly") return parseDaly();
-  return parseJbd();
-}
+  if(S.framing==="daly")return parseDaly(); return parseJbd();}
 function parseJbd(){let g=0;while(S.buf.length>=7&&g++<40){
   const st=S.buf.indexOf(0xDD);if(st<0){S.buf=[];break;}if(st>0)S.buf.splice(0,st);
   if(S.buf.length<4)break;const len=S.buf[3],total=4+len+3;if(S.buf.length<total)break;
   if(S.buf[total-1]!==0x77){S.buf.shift();continue;}
   const reg=S.buf[1],p=S.buf.slice(4,4+len),frame=S.buf.slice(0,total);S.buf.splice(0,total);rec("RX",hx(frame));
   if(reg===0x03){try{const u16=i=>(p[i]<<8)|p[i+1];S.info={voltage:u16(0)/100,soc:p[19],chargeFet:!!(p[20]&1),dischargeFet:!!(p[20]&2)};
-    rec("STATUS","V="+S.info.voltage.toFixed(2)+" SOC="+S.info.soc+" chg="+S.info.chargeFet+" dsg="+S.info.dischargeFet);renderInfo();}catch(e){}}
+    rec("STATUS","V="+S.info.voltage.toFixed(2)+" SOC="+S.info.soc+" dsg="+S.info.dischargeFet);render();}catch(e){}}
 }}
 function parseDaly(){let g=0;while(S.buf.length>=13&&g++<40){
   const st=S.buf.indexOf(0xA5);if(st<0){S.buf=[];break;}if(st>0)S.buf.splice(0,st);
   if(S.buf.length<13)break;const frame=S.buf.slice(0,13);let s=0;for(let i=0;i<12;i++)s=(s+frame[i])&0xFF;
   if(s!==frame[12]){S.buf.shift();continue;}S.buf.splice(0,13);rec("RX",hx(frame));
   const cmd=frame[2],d=frame.slice(4,12);
-  if(cmd===0x93){S.info=Object.assign({},S.info,{chargeFet:!!d[1],dischargeFet:!!d[2]});rec("STATUS","daly chg="+!!d[1]+" dsg="+!!d[2]);renderInfo();}
-  else if(cmd===0x90){const v=((d[0]<<8)|d[1])/10,soc=Math.round((((d[6]<<8)|d[7]))/10);S.info=Object.assign({},S.info,{voltage:v,soc});renderInfo();}
+  if(cmd===0x93){S.info=Object.assign({},S.info,{chargeFet:!!d[1],dischargeFet:!!d[2]});render();}
+  else if(cmd===0x90){S.info=Object.assign({},S.info,{voltage:((d[0]<<8)|d[1])/10,soc:Math.round(((d[6]<<8)|d[7])/10)});render();}
 }}
-function renderInfo(){if(!S.info)return;if(S.info.voltage!=null)$("rV").textContent=S.info.voltage.toFixed(2)+" V";if(S.info.soc!=null)$("rSoc").textContent=S.info.soc+" %";}
 
-/* ---------- discharge escalation ---------- */
+/* ---- discharge escalation ---- */
 async function confirm(want,ms){const t0=Date.now();while(Date.now()-t0<ms){await send(readStatusCmd());await sleep(450);if(S.info&&S.info.dischargeFet===want)return true;}return false;}
-async function sendResp(u8){if(!S.write)return;rec("TX/resp",hx(u8));try{await S.write.writeValue(u8);}catch(e){}}
-async function jbdEscalate(want){
+async function doDischarge(want){
   const V=[
     ["JBD E1",async()=>{await send(jbdE1(want));}],
     ["JBD FB",async()=>{await send(jbdFb(want));}],
     ["E1+FB retry",async()=>{await send(jbdE1(want));await sleep(160);await send(jbdFb(want));}],
     ["config-wrap",async()=>{await send(FAC_ENTER);await sleep(230);await send(jbdE1(want));await sleep(160);await send(jbdFb(want));await sleep(230);await send(FAC_EXIT);}],
     ["E1 both-off",async()=>{if(!want)await send(jbdWrite(0xE1,[0,3]));}],
-    ["with-reply",async()=>{await sendResp(jbdE1(want));await sleep(160);await sendResp(jbdFb(want));}]
+    ["with-reply",async()=>{await sendResp(jbdE1(want));await sleep(160);await sendResp(jbdFb(want));}],
+    ["Daly D9",async()=>{await send(dalyDischarge(want));}],
+    ["JK AC",async()=>{await send(jkReadAll());await sleep(200);await send(jkDischarge(want));}]
   ];
-  for(const [n,run] of V){ badge("wait","Trying: "+n+"…"); rec("attempt",n); try{await run();}catch(e){} if(await confirm(want,4000)){rec("OK",n);return n;} }
-  return null;
-}
-async function doDischarge(want){
-  if(S.framing==="jbd") return await jbdEscalate(want);
-  if(S.framing==="daly"){ badge("wait","Daly 0xD9…"); rec("attempt","Daly D9"); await send(dalyDischarge(want)); await sleep(300);
-    if(await confirm(want,5000)) return "Daly D9"; return null; }
-  if(S.framing==="jk"){ badge("wait","JK 0xAC…"); rec("attempt","JK AC"); await send(jkReadAll()); await sleep(300); await send(jkDischarge(want)); await sleep(300);
-    await confirm(want,3000); return "JK AC (sent)"; }   // JK: send-only, can't auto-confirm
+  for(const [n,run] of V){ badge("wait","Cutting… ("+n+")"); rec("attempt",n); try{await run();}catch(e){} if(await confirm(want,4000)){rec("OK",n);return n;} }
   return null;
 }
 
-/* ---------- connect flow ---------- */
+/* ---- connect ---- */
 async function discover(){
-  const want=S.proto;
-  async function svc(u){return await S.gatt.getPrimaryService(u);}
-  // JBD / auto
-  if(want==="jbd"||want==="auto"){
-    try{const s=await svc(JBD_SVC);S.write=await s.getCharacteristic(JBD_W);S.notify=await s.getCharacteristic(JBD_N);S.framing="jbd";rec("SERVICE","FF00 (JBD)");return;}catch(e){}
-    try{const s=await svc(ALT_SVC);const c=await s.getCharacteristic(ALT_C);S.write=c;S.notify=c;S.framing="jbd";rec("SERVICE","FFE0 (JBD)");return;}catch(e){}
-    if(want==="jbd")throw new Error("JBD service not found");
-  }
-  // Daly
-  if(want==="daly"){
-    try{const s=await svc(DALY_SVC);S.write=await s.getCharacteristic(DALY_W);S.notify=await s.getCharacteristic(DALY_N);S.framing="daly";rec("SERVICE","FFF0 (Daly)");return;}catch(e){}
-    try{const s=await svc(ALT_SVC);const c=await s.getCharacteristic(ALT_C);S.write=c;S.notify=c;S.framing="daly";rec("SERVICE","FFE0 (Daly)");return;}catch(e){}
-    throw new Error("Daly service not found");
-  }
-  // JK
-  if(want==="jk"){
-    const s=await svc(ALT_SVC);const c=await s.getCharacteristic(ALT_C);S.write=c;S.notify=c;S.framing="jk";rec("SERVICE","FFE0 (JK)");return;
-  }
-  // auto fallback: try Daly then JK
-  try{const s=await svc(DALY_SVC);S.write=await s.getCharacteristic(DALY_W);S.notify=await s.getCharacteristic(DALY_N);S.framing="daly";rec("SERVICE","FFF0 (Daly)");return;}catch(e){}
-  const s=await svc(ALT_SVC);const c=await s.getCharacteristic(ALT_C);S.write=c;S.notify=c;S.framing="jk";rec("SERVICE","FFE0 (JK?)");
+  const svc=async u=>await S.gatt.getPrimaryService(u);
+  try{const s=await svc(JBD_SVC);S.write=await s.getCharacteristic(JBD_W);S.notify=await s.getCharacteristic(JBD_N);S.framing="jbd";rec("SERVICE","FF00");return;}catch(e){}
+  try{const s=await svc(DALY_SVC);S.write=await s.getCharacteristic(DALY_W);S.notify=await s.getCharacteristic(DALY_N);S.framing="daly";rec("SERVICE","FFF0(Daly)");return;}catch(e){}
+  const s=await svc(ALT_SVC);const c=await s.getCharacteristic(ALT_C);S.write=c;S.notify=c;S.framing="jbd";rec("SERVICE","FFE0");
 }
-function badge(cls,text){const b=$("rBadge");b.className="badge "+cls;b.textContent=text;}
+function badge(cls,text){const b=$("badge");b.className="badge "+cls;b.textContent=text;}
 
-async function go(){
-  if(!navigator.bluetooth){$("result").classList.remove("hidden");badge("wait","Use Chrome/Edge");return;}
-  if(S.busy)return;S.busy=true;$("go").disabled=true;
-  const want=(MODE==="on");
+function rememberDevice(){ try{ const k=JSON.parse(localStorage.getItem("bms_known")||"[]"); if(S.dev&&!k.some(x=>x.id===S.dev.id)){ k.push({id:S.dev.id,name:S.dev.name||"BMS"}); localStorage.setItem("bms_known",JSON.stringify(k)); } }catch(e){} refreshNear(); }
+async function knownDevices(){ if(!navigator.bluetooth||!navigator.bluetooth.getDevices)return []; let ids=[]; try{ids=(JSON.parse(localStorage.getItem("bms_known")||"[]")).map(x=>x.id);}catch(e){} try{const devs=await navigator.bluetooth.getDevices();return devs.filter(d=>ids.includes(d.id));}catch(e){return [];} }
+async function refreshNear(){ const n=$("near"); if(!n)return; const k=await knownDevices(); n.style.display=k.length?"block":"none"; n.textContent="⚡ Nearest paired cell ("+k.length+")"; }
+async function connectTo(){
+  $("result").classList.remove("hidden");$("name").textContent=S.dev.name||"BMS";
+  badge("wait","Connecting…");
+  S.gatt=await S.dev.gatt.connect();
+  await discover();
+  S.buf=[]; await S.notify.startNotifications(); S.notify.addEventListener("characteristicvaluechanged",onData);
+  S.connected=true; rememberDevice(); rec("connected");
+  badge("wait","Reading status…");
+  for(let i=0;i<8&&(!S.info||S.info.dischargeFet==null);i++){ await send(readStatusCmd()); await sleep(350); }
+}
+async function pick(){
+  if(S.busy)return;
+  try{S.gatt&&S.gatt.connected&&S.gatt.disconnect();}catch(e){}
+  S.connected=false;S.info=null;
+  if(!navigator.bluetooth){badge("idle","Use Chrome/Edge");return;}
+  S.busy=true; render();
   try{
     rec("SCAN start");
-    S.dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:ALL_SVCS});
+    S.dev=await navigator.bluetooth.requestDevice({
+      filters:[
+        {services:[JBD_SVC]},{services:[ALT_SVC]},{services:[DALY_SVC]},
+        {namePrefix:"TK"},{namePrefix:"INE"},{namePrefix:"EN"},{namePrefix:"KLB"},{namePrefix:"EAGAL"},{namePrefix:"51."},
+        {namePrefix:"BMS"},{namePrefix:"JBD"},{namePrefix:"GR"},{namePrefix:"Xiaoxiang"},{namePrefix:"xiaoxiang"},{namePrefix:"Daly"},{namePrefix:"JK"},{namePrefix:"Batt"}
+      ],
+      optionalServices:ALL_SVCS
+    });
     rec("SELECTED",(S.dev.name||"BMS")+" id="+S.dev.id);
-    $("result").classList.remove("hidden");$("rName").textContent=S.dev.name||"BMS";$("rProto").textContent=S.proto;$("rV").textContent="— V";$("rSoc").textContent="— %";$("rMsg").textContent="";
-    badge("wait","Connecting…");
-    S.gatt=await S.dev.gatt.connect();
-    await discover(); $("rProto").textContent=S.framing.toUpperCase();
-    S.buf=[];S.info=null; await S.notify.startNotifications(); S.notify.addEventListener("characteristicvaluechanged",onData);
-    rec("connected");badge("wait","Reading status…");
-    for(let i=0;i<8&&(!S.info||S.info.dischargeFet==null);i++){ await send(readStatusCmd()); await sleep(350); }
-    if(S.info&&S.info.dischargeFet===want){ finish(want,true,"Already "+(want?"ON":"OFF")); return; }
-    badge("wait",want?"Turning ON…":"Turning OFF…");
-    const worked=await doDischarge(want);
-    finish(want,!!worked,worked?("Confirmed via "+worked):"Sent — pack didn't confirm");
-  }catch(e){rec("error",e.message);badge("wait","Stopped");$("rMsg").textContent=e.message.includes("cancel")?"":("Error: "+e.message);}
-  finally{S.busy=false;$("go").disabled=false;try{S.gatt&&S.gatt.connected&&S.gatt.disconnect();}catch(e){}}
+    await connectTo();
+  }catch(e){ rec("error",e.message); S.connected=false; }
+  finally{ S.busy=false; render(); }
 }
-function finish(want,ok,note){
-  const known=S.info&&S.info.dischargeFet!=null;
-  const isOff=known? !S.info.dischargeFet : !want;
-  if(known) badge(isOff?"off":"onb", isOff?"✓ DISCHARGE OFF":"DISCHARGE ON");
-  else badge("wait","Command sent (unverified)");
-  $("rMsg").textContent=(ok?"":"⚠ ")+note;
-  rec("RESULT","dischargeFet="+(known?S.info.dischargeFet:"?")+" ok="+ok+" — "+note);
+async function quickNearby(){
+  if(S.busy)return;
+  const known=await knownDevices();
+  if(!known.length){ badge("idle","No paired cells yet — Pick cell first"); return; }
+  try{S.gatt&&S.gatt.connected&&S.gatt.disconnect();}catch(e){}
+  S.connected=false;S.info=null;S.busy=true; render(); badge("wait","Finding the nearest paired cell…");
+  const rssi=new Map(); const acs=[]; let watched=false;
+  for(const d of known){
+    try{ const ac=new AbortController(); acs.push(ac);
+      d.addEventListener("advertisementreceived",ev=>{ if(ev.rssi!=null) rssi.set(d.id,ev.rssi); });
+      await d.watchAdvertisements({signal:ac.signal}); watched=true;
+    }catch(e){}
+  }
+  if(watched) await sleep(2600);
+  acs.forEach(a=>{try{a.abort();}catch(e){}});
+  let best=null,bestR=-999;
+  for(const d of known){ const r=rssi.get(d.id); if(r!=null&&r>bestR){bestR=r;best=d;} }
+  if(!best) best=known[known.length-1];
+  rec("NEAREST",(best.name||best.id)+(bestR>-999?(" "+bestR+" dBm"):" (fallback)"));
+  S.dev=best;
+  try{ await connectTo(); }catch(e){ rec("error",e.message); S.connected=false; }
+  S.busy=false; render();
+}
+async function doCut(){
+  if(!S.connected||S.busy)return;
+  S.busy=true; render();
+  try{ const worked=await doDischarge(false); rec("cut",worked||"unconfirmed"); }
+  catch(e){ rec("cut err",e.message); }
+  finally{ S.busy=false; render(); }
 }
 
-/* ---------- UI ---------- */
-$("proto").onchange=e=>{S.proto=e.target.value;};
-$("seg").onclick=e=>{const b=e.target.closest("button");if(!b)return;MODE=b.dataset.m;
-  [...$("seg").children].forEach(x=>x.classList.remove("on"));b.classList.add("on");
-  const g=$("go");g.classList.toggle("on",MODE==="on");g.textContent=MODE==="on"?"Pick cell → turn ON":"Pick cell → turn OFF";};
-$("go").onclick=go;$("dl").onclick=dlLog;$("clr").onclick=clrLog;
-rec("ready");
+function render(){
+  const b=$("bigbtn");
+  if(S.busy){ badge("wait","Working…"); b.disabled=true; return; }
+  b.disabled=false;
+  if(!S.connected){ badge("idle","Tap “Pick cell” to start"); b.textContent="Pick cell →"; b.className="big"; stage="idle"; return; }
+  if(S.info){ $("rv").textContent=(S.info.voltage!=null?S.info.voltage.toFixed(2):"—")+" V"; $("rsoc").textContent=(S.info.soc!=null?S.info.soc:"—")+" %"; }
+  const dischargingNow = S.info ? S.info.dischargeFet : true;
+  if(dischargingNow){ badge("green","● NOT DISCHARGED"); b.textContent="Discharge"; b.className="big red"; stage="live"; }
+  else { badge("red","⏻ DISCHARGE DONE"); b.textContent="Pick another cell"; b.className="big"; stage="done"; }
+}
+
+$("bigbtn").onclick=()=>{ if(stage==="live") doCut(); else pick(); };
+$("near").onclick=quickNearby; refreshNear();
+$("dl").onclick=dlLog; $("clr").onclick=clrLog;
+rec("ready"); render();
 </script>
 </body>
 </html>
