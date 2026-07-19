@@ -61,7 +61,7 @@ details summary{cursor:pointer;text-align:center;list-style:none}
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const hx=a=>[...a].map(b=>b.toString(16).padStart(2,"0").toUpperCase()).join(" ");
-const S={dev:null,gatt:null,write:null,notify:null,buf:[],info:null,busy:false,connected:false,framing:"jbd"};
+const S={dev:null,gatt:null,write:null,notify:null,buf:[],info:null,busy:false,connected:false,wantConnected:false,framing:"jbd"};
 
 /* ---- log ---- */
 let SESSION=[]; try{SESSION=JSON.parse(localStorage.getItem("bms_session_log")||"[]");}catch(e){}
@@ -73,6 +73,11 @@ function dlLog(){if(!SESSION.length){alert("Log is empty");return;}
   const txt="Cell Seek3r log\n"+SESSION.map(e=>`${e.t} [${e.proto}] [${e.dev}] ${e.ev}${e.detail?": "+e.detail:""}`).join("\n");
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/plain"}));a.download="cellseek3r-log.txt";a.click();}
 function clrLog(){SESSION=[];try{localStorage.removeItem("bms_session_log");}catch(e){}const el=$("log");if(el)el.textContent="(cleared)";}
+
+/* ---- per-device winning-method memory ---- */
+function devKey(){return (S.dev&&(S.dev.id||S.dev.name))||"?";}
+function getPref(){try{return (JSON.parse(localStorage.getItem("bms_method_pref")||"{}"))[devKey()]||null;}catch(e){return null;}}
+function setPref(m){try{const o=JSON.parse(localStorage.getItem("bms_method_pref")||"{}");o[devKey()]=m;localStorage.setItem("bms_method_pref",JSON.stringify(o));}catch(e){}}
 
 /* UUIDs */
 const JBD_SVC=0xff00,JBD_N=0xff01,JBD_W=0xff02,ALT_SVC=0xffe0,ALT_C=0xffe1,DALY_SVC=0xfff0,DALY_N=0xfff1,DALY_W=0xfff2;
@@ -132,7 +137,9 @@ async function doDischarge(want){
     ["Daly",async()=>{await send(dalyDischarge(want));}],
     ["JK",async()=>{await send(jkReadAll());await sleep(200);await send(jkDischarge(want));}]
   ];
-  for(const [n,run] of V){setBadge("wait","Cutting…","method "+n);rec("attempt",n);try{await run();}catch(e){}if(await confirm(want,4000)){rec("OK",n);return n;}}
+  const pref=getPref();
+  if(pref){const i=V.findIndex(x=>x[0]===pref);if(i>0){const m=V.splice(i,1)[0];V.unshift(m);rec("memory","trying remembered method '"+pref+"' first");}}
+  for(const [n,run] of V){setBadge("wait","Cutting…","method "+n);rec("attempt",n);try{await run();}catch(e){}if(await confirm(want,4000)){rec("OK",n);setPref(n);return n;}}
   rec("FAILED","all methods exhausted");return null;
 }
 
@@ -145,9 +152,33 @@ async function discover(){
 }
 function setBadge(cls,big,sm){const b=$("badge");b.className="badge "+cls;b.innerHTML='<span class="big">'+big+'</span>'+(sm?'<span class="sm">'+sm+'</span>':'');}
 
+/* open GATT + services + notifications (reused by connect and the watchdog) */
+async function attachGatt(){
+  S.gatt=await S.dev.gatt.connect();
+  await discover();rec("SERVICE",S.framing);
+  S.buf=[];await S.notify.startNotifications();S.notify.addEventListener("characteristicvaluechanged",onData);
+  S.connected=true;
+}
+async function readInitial(n){for(let i=0;i<(n||8)&&(!S.info||S.info.dischargeFet==null);i++){await send(readStatusCmd());await sleep(320);}}
+
+/* watchdog: silently reconnect if the link drops (unless the user meant to leave) */
+async function onDrop(){
+  S.connected=false;
+  if(!S.wantConnected){render();return;}
+  rec("DROP","link lost — reconnecting");
+  for(let i=0;i<8&&S.wantConnected;i++){
+    setBadge("wait","Reconnecting…","attempt "+(i+1));
+    try{ await attachGatt(); rec("RECONNECTED"); await readInitial(6); render(); return; }
+    catch(e){ rec("reconnect fail",e.message); await sleep(1200); }
+  }
+  rec("reconnect gave up"); render();
+}
+function armDropWatch(){ if(S.dev&&!S.dev._drop){S.dev._drop=true;S.dev.addEventListener("gattserverdisconnected",onDrop);} }
+
 async function connect(){
   if(S.busy)return;
   if(!navigator.bluetooth){setBadge("idle","Use Chrome/Edge","Web Bluetooth not supported here");return;}
+  S.wantConnected=false;
   try{S.gatt&&S.gatt.connected&&S.gatt.disconnect();}catch(e){}
   S.connected=false;S.info=null;S.busy=true;render();
   try{
@@ -160,13 +191,12 @@ async function connect(){
       optionalServices:ALL_SVCS
     });
     rec("SELECTED",(S.dev.name||"BMS")+" id="+S.dev.id);
+    armDropWatch();
     setBadge("wait","Connecting…",S.dev.name||"BMS");
-    S.gatt=await S.dev.gatt.connect();
-    await discover();rec("SERVICE",S.framing);
-    S.buf=[];await S.notify.startNotifications();S.notify.addEventListener("characteristicvaluechanged",onData);
-    S.connected=true;rec("connected");
+    await attachGatt();rec("connected");
+    S.wantConnected=true;
     setBadge("wait","Reading…",S.dev.name||"BMS");
-    for(let i=0;i<8&&(!S.info||S.info.dischargeFet==null);i++){await send(readStatusCmd());await sleep(350);}
+    await readInitial(8);
   }catch(e){rec("error",e.message);S.connected=false;}
   finally{S.busy=false;render();}
 }
@@ -186,7 +216,8 @@ function render(){
   const live=S.info?S.info.dischargeFet:true;
   const v=S.info&&S.info.voltage!=null?S.info.voltage.toFixed(2)+" V":"";
   const soc=S.info&&S.info.soc!=null?" · "+S.info.soc+"%":"";
-  if(live){setBadge("green","NOT CUT",name+(v?" · "+v+soc:""));b.textContent="⏻ Cut battery";b.className="btn cut";}
+  const mem=getPref();
+  if(live){setBadge("green","NOT CUT",name+(v?" · "+v+soc:"")+(mem?" · ⚡ "+mem:""));b.textContent="⏻ Cut battery";b.className="btn cut";}
   else{setBadge("red","CUT",name+(v?" · "+v+soc:""));b.textContent="Connect another";b.className="btn";}
 }
 
