@@ -9,78 +9,50 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{--bg:#0a0f1e;--card:rgba(90,160,255,.09);--stroke:rgba(120,180,255,.22);--txt:#eaf2ff;--muted:#93a4c4;--red:#ff5b7a;--green:#22c55e;--amber:#fbbf24;--purple:#22d3ee;--purple2:#2563eb}
+:root{--bg:#0a0f1e;--card:rgba(90,160,255,.09);--stroke:rgba(120,180,255,.22);--txt:#eaf2ff;--muted:#93a4c4;--red:#ff5b7a;--green:#22c55e;--amber:#fbbf24;--cyan:#22d3ee;--blue:#2563eb}
 html,body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-body{max-width:520px;margin:0 auto;min-height:100vh;padding:26px 18px calc(30px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
+body{max-width:480px;margin:0 auto;min-height:100vh;padding:30px 20px calc(34px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:22px}
 body::before{content:"";position:fixed;inset:-10%;z-index:-1;background:radial-gradient(46% 32% at 16% -2%,rgba(34,211,238,.26),transparent 62%),radial-gradient(42% 30% at 94% 10%,rgba(59,130,246,.24),transparent 60%),radial-gradient(52% 42% at 62% 110%,rgba(56,189,248,.16),transparent 60%)}
-h1{font-size:22px;margin:0;display:flex;align-items:center;gap:9px}
-h1 .b{width:34px;height:34px;border-radius:10px;background:linear-gradient(140deg,var(--purple),var(--purple2));display:grid;place-items:center;font-size:18px;box-shadow:0 4px 14px rgba(37,99,235,.55)}
-.sub{color:var(--muted);font-size:13px;margin:-4px 0 2px}
-.badge{text-align:center;padding:22px 16px;border-radius:18px;font-size:21px;font-weight:800;letter-spacing:1px;backdrop-filter:blur(12px)}
-.badge.idle{background:var(--card);color:var(--muted);border:1px solid var(--stroke);font-size:15px;font-weight:600;letter-spacing:0}
-.badge.green{background:rgba(34,197,94,.15);color:#9af0bf;border:1px solid rgba(34,197,94,.5)}
-.badge.red{background:rgba(255,84,104,.16);color:#ffb0c2;border:1px solid rgba(255,84,104,.55);animation:pulse 1.6s infinite}
-.badge.wait{background:rgba(251,191,36,.13);color:#ffd98a;border:1px solid rgba(251,191,36,.45);font-size:15px;font-weight:650;letter-spacing:0}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.72}}
-.card{background:var(--card);border:1px solid var(--stroke);border-radius:16px;padding:14px 16px;backdrop-filter:blur(12px)}
-.name{font-size:15px;font-weight:700;word-break:break-all}
-.rowv{display:flex;justify-content:space-between;margin-top:9px;font-size:14px}.rowv .k{color:var(--muted)}
-.big{width:100%;padding:22px;border-radius:18px;border:none;font-size:19px;font-weight:800;color:#05121f;background:linear-gradient(135deg,var(--purple),var(--purple2));box-shadow:0 10px 30px rgba(37,99,235,.42),inset 0 1px 0 rgba(255,255,255,.35)}
-.big.red{background:linear-gradient(135deg,#ff5468,#e23b50);box-shadow:0 10px 30px rgba(255,84,104,.4)}
-.big:active{transform:scale(.98)} .big:disabled{opacity:.55}
-.hint{color:#6f6591;font-size:12px;text-align:center;line-height:1.6}
-details{color:var(--muted);font-size:11px}
-#log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;background:rgba(0,0,0,.3);border-radius:10px;padding:10px;white-space:pre-wrap;max-height:150px;overflow:auto;margin-top:8px}
-.hidden{display:none}
+h1{font-size:23px;margin:0;display:flex;align-items:center;gap:10px}
+h1 .b{width:36px;height:36px;border-radius:11px;background:linear-gradient(140deg,var(--cyan),var(--blue));display:grid;place-items:center;font-size:19px;box-shadow:0 4px 14px rgba(37,99,235,.55)}
+.spacer{flex:1}
+.badge{text-align:center;padding:46px 18px;border-radius:26px;font-weight:800;letter-spacing:1px;backdrop-filter:blur(12px);border:1px solid var(--stroke);background:var(--card);transition:.25s}
+.badge .big{font-size:38px;line-height:1.1;display:block}
+.badge .sm{font-size:14px;font-weight:600;letter-spacing:0;color:var(--muted);display:block;margin-top:10px;word-break:break-all}
+.badge.green{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.55)}.badge.green .big{color:#7bf0a8}
+.badge.red{background:rgba(255,84,104,.16);border-color:rgba(255,84,104,.6);animation:pulse 1.6s infinite}.badge.red .big{color:#ffb0c2}
+.badge.wait .big{color:var(--amber);font-size:26px}
+.badge.idle .big{color:var(--muted);font-size:26px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.74}}
+.btn{width:100%;padding:26px;border-radius:22px;border:none;font-size:21px;font-weight:800;color:#05121f;background:linear-gradient(135deg,var(--cyan),var(--blue));box-shadow:0 12px 34px rgba(37,99,235,.42),inset 0 1px 0 rgba(255,255,255,.35)}
+.btn.cut{background:linear-gradient(135deg,#ff5468,#e23b50);color:#fff;box-shadow:0 12px 34px rgba(255,84,104,.42)}
+.btn:active{transform:scale(.98)}.btn:disabled{opacity:.5}
+.hint{color:var(--muted);font-size:12px;text-align:center;line-height:1.6}
 </style>
 </head>
 <body>
   <h1><span class="b">🔎</span> Cell Seek3r</h1>
-  <div class="sub">Connect a cell, then cut its discharge in one tap.</div>
 
-  <div class="badge idle" id="badge">Tap “Pick cell” to start</div>
+  <div class="spacer"></div>
 
-  <div class="card hidden" id="result">
-    <div class="name" id="name">—</div>
-    <div class="rowv"><span class="k">Voltage</span><span id="rv">— V</span></div>
-    <div class="rowv"><span class="k">State of charge</span><span id="rsoc">— %</span></div>
-  </div>
+  <div class="badge idle" id="badge"><span class="big">Not connected</span><span class="sm">Tap Connect to read a cell</span></div>
 
-  <button class="big" id="bigbtn">Pick cell →</button>
-  <button id="near" style="display:none;width:100%;padding:14px;border-radius:14px;border:1px solid var(--stroke);background:var(--card);color:var(--txt);font-weight:700;font-size:14px;backdrop-filter:blur(12px)">⚡ Nearest paired cell</button>
+  <div class="spacer"></div>
 
-  <div class="hint">Green = still discharging (live). Press Discharge to cut it → turns red “Discharge done”. Chrome/Edge only.</div>
-  <div style="display:flex;gap:8px">
-    <button id="dl" style="flex:1;padding:11px;border-radius:11px;border:1px solid var(--stroke);background:var(--card);color:var(--txt);font-weight:600;font-size:13px">⬇ Download log</button>
-    <button id="clr" style="padding:11px 14px;border-radius:11px;border:1px solid var(--stroke);background:var(--card);color:var(--muted);font-size:13px">Clear</button>
-  </div>
-  <details><summary>Session log</summary><div id="log"></div></details>
+  <button class="btn" id="btn">Connect</button>
+  <div class="hint" id="hint">Chrome or Edge on Android. Green = battery still live · Red = discharge cut.</div>
 
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const hx=a=>[...a].map(b=>b.toString(16).padStart(2,"0").toUpperCase()).join(" ");
-const S={dev:null,gatt:null,write:null,notify:null,buf:[],info:null,busy:false,proto:"auto",framing:"jbd"};
-let stage="idle";
+const S={dev:null,gatt:null,write:null,notify:null,buf:[],info:null,busy:false,connected:false,framing:"jbd"};
 
-/* ---- log ---- */
-let SESSION=[]; try{SESSION=JSON.parse(localStorage.getItem("bms_session_log")||"[]");}catch(e){}
-function rec(ev,detail){const e={t:new Date().toISOString(),dev:(S.dev&&S.dev.name)||"-",proto:S.framing,ev,detail:detail||""};
-  SESSION.push(e); if(SESSION.length>4000)SESSION.splice(0,SESSION.length-4000);
-  try{localStorage.setItem("bms_session_log",JSON.stringify(SESSION));}catch(e){}
-  const el=$("log"); if(el)el.textContent=(`${e.t.slice(11,19)} [${S.framing}] ${ev}${detail?": "+detail:""}\n`+el.textContent).slice(0,9000);}
-function log(m){rec("log",m);}
-function dlLog(){if(!SESSION.length){alert("Log is empty");return;}
-  const txt="Cell Seek3r log\n"+SESSION.map(e=>`${e.t} [${e.proto}] [${e.dev}] ${e.ev}${e.detail?": "+e.detail:""}`).join("\n");
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/plain"}));a.download="bms-session-log.txt";a.click();}
-function clrLog(){SESSION=[];try{localStorage.removeItem("bms_session_log");}catch(e){}const el=$("log");if(el)el.textContent="(cleared)";}
-
-/* ---- UUIDs ---- */
+/* UUIDs */
 const JBD_SVC=0xff00,JBD_N=0xff01,JBD_W=0xff02,ALT_SVC=0xffe0,ALT_C=0xffe1,DALY_SVC=0xfff0,DALY_N=0xfff1,DALY_W=0xfff2;
 const ALL_SVCS=[0xff00,0xff01,0xff02,0xffe0,0xffe1,0xfff0,0xfff1,0xfff2];
 
-/* ---- JBD ---- */
+/* JBD */
 function jbdCs(b){let s=0;for(const x of b)s=(s+x)&0xFFFF;return (0x10000-s)&0xFFFF;}
 function jbdRead(reg){const c=jbdCs([reg,0]);return new Uint8Array([0xDD,0xA5,reg,0,(c>>8)&255,c&255,0x77]);}
 function jbdWrite(reg,data){const b=[reg,data.length,...data],c=jbdCs(b);return new Uint8Array([0xDD,0x5A,reg,data.length,...data,(c>>8)&255,c&255,0x77]);}
@@ -88,87 +60,70 @@ const jbdE1=on=>jbdWrite(0xE1,[0x00,on?0x00:0x02]);
 const jbdFb=on=>jbdWrite(0xFB,[0x00,on?0x00:0x01]);
 const FAC_ENTER=new Uint8Array([0xDD,0x5A,0x00,0x02,0x56,0x78,0xFF,0x30,0x77]);
 const FAC_EXIT =new Uint8Array([0xDD,0x5A,0x01,0x02,0x28,0x28,0xFF,0xAD,0x77]);
-/* ---- Daly ---- */
+/* Daly */
 function dalyFrame(cmd,d8){const f=[0xA5,0x40,cmd,0x08,...d8];let s=0;for(const b of f)s=(s+b)&0xFF;f.push(s);return new Uint8Array(f);}
 const dalyDischarge=on=>dalyFrame(0xD9,[on?1:0,0,0,0,0,0,0,0]);
 const dalyReadMos=()=>dalyFrame(0x93,[0,0,0,0,0,0,0,0]);
-/* ---- JK ---- */
+/* JK */
 function jkFrame(reg,value){const f=new Array(20).fill(0);f[0]=0xAA;f[1]=0x55;f[2]=0x90;f[3]=0xEB;f[4]=reg;f[5]=0x04;f[6]=value&0xFF;let s=0;for(let i=0;i<19;i++)s=(s+f[i])&0xFF;f[19]=s;return new Uint8Array(f);}
 const jkDischarge=on=>jkFrame(0xAC,on?1:0);
 const jkReadAll=()=>jkFrame(0x96,0);
 
-/* ---- transport & parse ---- */
-async function send(u8){if(!S.write)return; rec("TX",hx(u8)); try{if(S.write.writeValueWithoutResponse)await S.write.writeValueWithoutResponse(u8);else await S.write.writeValue(u8);}catch(e){try{await S.write.writeValue(u8);}catch(e2){log("write err "+e2.message);}}}
-async function sendResp(u8){if(!S.write)return;rec("TX/resp",hx(u8));try{await S.write.writeValue(u8);}catch(e){}}
-function readStatusCmd(){ if(S.framing==="daly")return dalyReadMos(); if(S.framing==="jk")return jkReadAll(); return jbdRead(0x03); }
+/* transport & parse */
+async function send(u8){if(!S.write)return;try{if(S.write.writeValueWithoutResponse)await S.write.writeValueWithoutResponse(u8);else await S.write.writeValue(u8);}catch(e){try{await S.write.writeValue(u8);}catch(e2){}}}
+async function sendResp(u8){if(!S.write)return;try{await S.write.writeValue(u8);}catch(e){}}
+function readStatusCmd(){if(S.framing==="daly")return dalyReadMos();if(S.framing==="jk")return jkReadAll();return jbdRead(0x03);}
 function onData(ev){const v=ev.target.value;const chunk=[];for(let i=0;i<v.byteLength;i++)chunk.push(v.getUint8(i));
-  if(S.framing==="jk"){rec("RX",hx(chunk));return;}
-  for(const b of chunk)S.buf.push(b);
-  if(S.framing==="daly")return parseDaly(); return parseJbd();}
+  if(S.framing==="jk")return;for(const b of chunk)S.buf.push(b);
+  if(S.framing==="daly")return parseDaly();return parseJbd();}
 function parseJbd(){let g=0;while(S.buf.length>=7&&g++<40){
   const st=S.buf.indexOf(0xDD);if(st<0){S.buf=[];break;}if(st>0)S.buf.splice(0,st);
   if(S.buf.length<4)break;const len=S.buf[3],total=4+len+3;if(S.buf.length<total)break;
   if(S.buf[total-1]!==0x77){S.buf.shift();continue;}
-  const reg=S.buf[1],p=S.buf.slice(4,4+len),frame=S.buf.slice(0,total);S.buf.splice(0,total);rec("RX",hx(frame));
-  if(reg===0x03){try{const u16=i=>(p[i]<<8)|p[i+1];S.info={voltage:u16(0)/100,soc:p[19],chargeFet:!!(p[20]&1),dischargeFet:!!(p[20]&2)};
-    rec("STATUS","V="+S.info.voltage.toFixed(2)+" SOC="+S.info.soc+" dsg="+S.info.dischargeFet);render();}catch(e){}}
+  const reg=S.buf[1],p=S.buf.slice(4,4+len);S.buf.splice(0,total);
+  if(reg===0x03){try{const u16=i=>(p[i]<<8)|p[i+1];S.info={voltage:u16(0)/100,soc:p[19],chargeFet:!!(p[20]&1),dischargeFet:!!(p[20]&2)};render();}catch(e){}}
 }}
 function parseDaly(){let g=0;while(S.buf.length>=13&&g++<40){
   const st=S.buf.indexOf(0xA5);if(st<0){S.buf=[];break;}if(st>0)S.buf.splice(0,st);
   if(S.buf.length<13)break;const frame=S.buf.slice(0,13);let s=0;for(let i=0;i<12;i++)s=(s+frame[i])&0xFF;
-  if(s!==frame[12]){S.buf.shift();continue;}S.buf.splice(0,13);rec("RX",hx(frame));
+  if(s!==frame[12]){S.buf.shift();continue;}S.buf.splice(0,13);
   const cmd=frame[2],d=frame.slice(4,12);
   if(cmd===0x93){S.info=Object.assign({},S.info,{chargeFet:!!d[1],dischargeFet:!!d[2]});render();}
   else if(cmd===0x90){S.info=Object.assign({},S.info,{voltage:((d[0]<<8)|d[1])/10,soc:Math.round(((d[6]<<8)|d[7])/10)});render();}
 }}
 
-/* ---- discharge escalation ---- */
+/* discharge escalation */
 async function confirm(want,ms){const t0=Date.now();while(Date.now()-t0<ms){await send(readStatusCmd());await sleep(450);if(S.info&&S.info.dischargeFet===want)return true;}return false;}
 async function doDischarge(want){
   const V=[
-    ["JBD E1",async()=>{await send(jbdE1(want));}],
-    ["JBD FB",async()=>{await send(jbdFb(want));}],
-    ["E1+FB retry",async()=>{await send(jbdE1(want));await sleep(160);await send(jbdFb(want));}],
-    ["config-wrap",async()=>{await send(FAC_ENTER);await sleep(230);await send(jbdE1(want));await sleep(160);await send(jbdFb(want));await sleep(230);await send(FAC_EXIT);}],
-    ["E1 both-off",async()=>{if(!want)await send(jbdWrite(0xE1,[0,3]));}],
-    ["with-reply",async()=>{await sendResp(jbdE1(want));await sleep(160);await sendResp(jbdFb(want));}],
-    ["Daly D9",async()=>{await send(dalyDischarge(want));}],
-    ["JK AC",async()=>{await send(jkReadAll());await sleep(200);await send(jkDischarge(want));}]
+    ["E1",async()=>{await send(jbdE1(want));}],
+    ["FB",async()=>{await send(jbdFb(want));}],
+    ["E1+FB",async()=>{await send(jbdE1(want));await sleep(160);await send(jbdFb(want));}],
+    ["config",async()=>{await send(FAC_ENTER);await sleep(230);await send(jbdE1(want));await sleep(160);await send(jbdFb(want));await sleep(230);await send(FAC_EXIT);}],
+    ["both-off",async()=>{if(!want)await send(jbdWrite(0xE1,[0,3]));}],
+    ["reply",async()=>{await sendResp(jbdE1(want));await sleep(160);await sendResp(jbdFb(want));}],
+    ["Daly",async()=>{await send(dalyDischarge(want));}],
+    ["JK",async()=>{await send(jkReadAll());await sleep(200);await send(jkDischarge(want));}]
   ];
-  for(const [n,run] of V){ badge("wait","Cutting… ("+n+")"); rec("attempt",n); try{await run();}catch(e){} if(await confirm(want,4000)){rec("OK",n);return n;} }
+  for(const [n,run] of V){setBadge("wait","Cutting…","method "+n);try{await run();}catch(e){}if(await confirm(want,4000))return n;}
   return null;
 }
 
-/* ---- connect ---- */
+/* connect */
 async function discover(){
   const svc=async u=>await S.gatt.getPrimaryService(u);
-  try{const s=await svc(JBD_SVC);S.write=await s.getCharacteristic(JBD_W);S.notify=await s.getCharacteristic(JBD_N);S.framing="jbd";rec("SERVICE","FF00");return;}catch(e){}
-  try{const s=await svc(DALY_SVC);S.write=await s.getCharacteristic(DALY_W);S.notify=await s.getCharacteristic(DALY_N);S.framing="daly";rec("SERVICE","FFF0(Daly)");return;}catch(e){}
-  const s=await svc(ALT_SVC);const c=await s.getCharacteristic(ALT_C);S.write=c;S.notify=c;S.framing="jbd";rec("SERVICE","FFE0");
+  try{const s=await svc(JBD_SVC);S.write=await s.getCharacteristic(JBD_W);S.notify=await s.getCharacteristic(JBD_N);S.framing="jbd";return;}catch(e){}
+  try{const s=await svc(DALY_SVC);S.write=await s.getCharacteristic(DALY_W);S.notify=await s.getCharacteristic(DALY_N);S.framing="daly";return;}catch(e){}
+  const s=await svc(ALT_SVC);const c=await s.getCharacteristic(ALT_C);S.write=c;S.notify=c;S.framing="jbd";
 }
-function badge(cls,text){const b=$("badge");b.className="badge "+cls;b.textContent=text;}
+function setBadge(cls,big,sm){const b=$("badge");b.className="badge "+cls;b.innerHTML='<span class="big">'+big+'</span>'+(sm?'<span class="sm">'+sm+'</span>':'');}
 
-function rememberDevice(){ try{ const k=JSON.parse(localStorage.getItem("bms_known")||"[]"); if(S.dev&&!k.some(x=>x.id===S.dev.id)){ k.push({id:S.dev.id,name:S.dev.name||"BMS"}); localStorage.setItem("bms_known",JSON.stringify(k)); } }catch(e){} refreshNear(); }
-async function knownDevices(){ if(!navigator.bluetooth||!navigator.bluetooth.getDevices)return []; let ids=[]; try{ids=(JSON.parse(localStorage.getItem("bms_known")||"[]")).map(x=>x.id);}catch(e){} try{const devs=await navigator.bluetooth.getDevices();return devs.filter(d=>ids.includes(d.id));}catch(e){return [];} }
-async function refreshNear(){ const n=$("near"); if(!n)return; const k=await knownDevices(); n.style.display=k.length?"block":"none"; n.textContent="⚡ Nearest paired cell ("+k.length+")"; }
-async function connectTo(){
-  $("result").classList.remove("hidden");$("name").textContent=S.dev.name||"BMS";
-  badge("wait","Connecting…");
-  S.gatt=await S.dev.gatt.connect();
-  await discover();
-  S.buf=[]; await S.notify.startNotifications(); S.notify.addEventListener("characteristicvaluechanged",onData);
-  S.connected=true; rememberDevice(); rec("connected");
-  badge("wait","Reading status…");
-  for(let i=0;i<8&&(!S.info||S.info.dischargeFet==null);i++){ await send(readStatusCmd()); await sleep(350); }
-}
-async function pick(){
+async function connect(){
   if(S.busy)return;
+  if(!navigator.bluetooth){setBadge("idle","Use Chrome/Edge","Web Bluetooth not supported here");return;}
   try{S.gatt&&S.gatt.connected&&S.gatt.disconnect();}catch(e){}
-  S.connected=false;S.info=null;
-  if(!navigator.bluetooth){badge("idle","Use Chrome/Edge");return;}
-  S.busy=true; render();
+  S.connected=false;S.info=null;S.busy=true;render();
   try{
-    rec("SCAN start");
     S.dev=await navigator.bluetooth.requestDevice({
       filters:[
         {services:[JBD_SVC]},{services:[ALT_SVC]},{services:[DALY_SVC]},
@@ -177,57 +132,38 @@ async function pick(){
       ],
       optionalServices:ALL_SVCS
     });
-    rec("SELECTED",(S.dev.name||"BMS")+" id="+S.dev.id);
-    await connectTo();
-  }catch(e){ rec("error",e.message); S.connected=false; }
-  finally{ S.busy=false; render(); }
+    setBadge("wait","Connecting…",S.dev.name||"BMS");
+    S.gatt=await S.dev.gatt.connect();
+    await discover();
+    S.buf=[];await S.notify.startNotifications();S.notify.addEventListener("characteristicvaluechanged",onData);
+    S.connected=true;
+    setBadge("wait","Reading…",S.dev.name||"BMS");
+    for(let i=0;i<8&&(!S.info||S.info.dischargeFet==null);i++){await send(readStatusCmd());await sleep(350);}
+  }catch(e){S.connected=false;}
+  finally{S.busy=false;render();}
 }
-async function quickNearby(){
-  if(S.busy)return;
-  const known=await knownDevices();
-  if(!known.length){ badge("idle","No paired cells yet — Pick cell first"); return; }
-  try{S.gatt&&S.gatt.connected&&S.gatt.disconnect();}catch(e){}
-  S.connected=false;S.info=null;S.busy=true; render(); badge("wait","Finding the nearest paired cell…");
-  const rssi=new Map(); const acs=[]; let watched=false;
-  for(const d of known){
-    try{ const ac=new AbortController(); acs.push(ac);
-      d.addEventListener("advertisementreceived",ev=>{ if(ev.rssi!=null) rssi.set(d.id,ev.rssi); });
-      await d.watchAdvertisements({signal:ac.signal}); watched=true;
-    }catch(e){}
-  }
-  if(watched) await sleep(2600);
-  acs.forEach(a=>{try{a.abort();}catch(e){}});
-  let best=null,bestR=-999;
-  for(const d of known){ const r=rssi.get(d.id); if(r!=null&&r>bestR){bestR=r;best=d;} }
-  if(!best) best=known[known.length-1];
-  rec("NEAREST",(best.name||best.id)+(bestR>-999?(" "+bestR+" dBm"):" (fallback)"));
-  S.dev=best;
-  try{ await connectTo(); }catch(e){ rec("error",e.message); S.connected=false; }
-  S.busy=false; render();
-}
-async function doCut(){
+async function cut(){
   if(!S.connected||S.busy)return;
-  S.busy=true; render();
-  try{ const worked=await doDischarge(false); rec("cut",worked||"unconfirmed"); }
-  catch(e){ rec("cut err",e.message); }
-  finally{ S.busy=false; render(); }
+  S.busy=true;render();
+  try{await doDischarge(false);}catch(e){}
+  finally{S.busy=false;render();}
 }
 
 function render(){
-  const b=$("bigbtn");
-  if(S.busy){ badge("wait","Working…"); b.disabled=true; return; }
+  const b=$("btn");
+  if(S.busy){b.disabled=true;return;}
   b.disabled=false;
-  if(!S.connected){ badge("idle","Tap “Pick cell” to start"); b.textContent="Pick cell →"; b.className="big"; stage="idle"; return; }
-  if(S.info){ $("rv").textContent=(S.info.voltage!=null?S.info.voltage.toFixed(2):"—")+" V"; $("rsoc").textContent=(S.info.soc!=null?S.info.soc:"—")+" %"; }
-  const dischargingNow = S.info ? S.info.dischargeFet : true;
-  if(dischargingNow){ badge("green","● NOT DISCHARGED"); b.textContent="Discharge"; b.className="big red"; stage="live"; }
-  else { badge("red","⏻ DISCHARGE DONE"); b.textContent="Pick another cell"; b.className="big"; stage="done"; }
+  if(!S.connected){setBadge("idle","Not connected","Tap Connect to read a cell");b.textContent="Connect";b.className="btn";return;}
+  const name=(S.dev&&S.dev.name)||"BMS";
+  const live=S.info?S.info.dischargeFet:true;
+  const v=S.info&&S.info.voltage!=null?S.info.voltage.toFixed(2)+" V":"";
+  const soc=S.info&&S.info.soc!=null?" · "+S.info.soc+"%":"";
+  if(live){setBadge("green","NOT CUT",name+(v?" · "+v+soc:""));b.textContent="⏻ Cut battery";b.className="btn cut";}
+  else{setBadge("red","CUT",name+(v?" · "+v+soc:""));b.textContent="Connect another";b.className="btn";}
 }
 
-$("bigbtn").onclick=()=>{ if(stage==="live") doCut(); else pick(); };
-$("near").onclick=quickNearby; refreshNear();
-$("dl").onclick=dlLog; $("clr").onclick=clrLog;
-rec("ready"); render();
+$("btn").onclick=()=>{ if(S.connected && S.info && S.info.dischargeFet===false) connect(); else if(S.connected) cut(); else connect(); };
+render();
 </script>
 </body>
 </html>
