@@ -81,7 +81,7 @@ function setPref(m){try{const o=JSON.parse(localStorage.getItem("bms_method_pref
 
 /* UUIDs */
 const JBD_SVC=0xff00,JBD_N=0xff01,JBD_W=0xff02,ALT_SVC=0xffe0,ALT_C=0xffe1,DALY_SVC=0xfff0,DALY_N=0xfff1,DALY_W=0xfff2;
-const ALL_SVCS=[0xff00,0xff01,0xff02,0xffe0,0xffe1,0xfff0,0xfff1,0xfff2];
+const ALL_SVCS=[0xff00,0xff01,0xff02,0xffe0,0xffe1,0xfff0,0xfff1,0xfff2,0xfee0,0xfee7,0xffa0,0xffb0,0xffc0,0xffd0,0xae00,0xae30,0x1800,0x180a,0x180f];
 
 /* JBD */
 function jbdCs(b){let s=0;for(const x of b)s=(s+x)&0xFFFF;return (0x10000-s)&0xFFFF;}
@@ -108,7 +108,8 @@ async function send(u8){if(!S.write||!S.connected)return;rec("TX",hx(u8));try{
 }catch(e){rec("TX err",e.message);}}
 async function sendResp(u8){if(!S.write||!S.connected)return;rec("TX/resp",hx(u8));try{await S.write.writeValue(u8);}catch(e){rec("TX/resp err",e.message);}}
 function readStatusCmd(){if(S.framing==="daly")return dalyReadMos();if(S.framing==="jk")return jkReadAll();return jbdRead(0x03);}
-function onData(ev){const v=ev.target.value;const chunk=[];for(let i=0;i<v.byteLength;i++)chunk.push(v.getUint8(i));
+function onData(ev){const src=ev.target.uuid?ev.target.uuid.slice(4,8):"?";const v=ev.target.value;const chunk=[];for(let i=0;i<v.byteLength;i++)chunk.push(v.getUint8(i));
+  rec("RX@"+src,hx(chunk));
   if(S.framing==="jk")return;for(const b of chunk)S.buf.push(b);
   if(S.framing==="daly")return parseDaly();return parseJbd();}
 function parseJbd(){let g=0;while(S.buf.length>=7&&g++<40){
@@ -148,20 +149,35 @@ async function doDischarge(want){
 }
 
 /* connect */
-async function discover(){
-  const svc=async u=>await S.gatt.getPrimaryService(u);
-  try{const s=await svc(JBD_SVC);S.svc=s;S.write=await s.getCharacteristic(JBD_W);S.framing="jbd";return;}catch(e){}
-  try{const s=await svc(DALY_SVC);S.svc=s;S.write=await s.getCharacteristic(DALY_W);S.framing="daly";return;}catch(e){}
-  const s=await svc(ALT_SVC);S.svc=s;S.write=await s.getCharacteristic(ALT_C);S.framing="jbd";
-}
-/* subscribe to EVERY notify-capable characteristic in the service (clone packs stream on non-standard chars) */
-async function subscribeAll(){
-  S.notifies=[];let chars=[];
-  try{chars=await S.svc.getCharacteristics();}catch(e){}
-  for(const c of chars){const p=c.properties||{};
-    if(p.notify||p.indicate){try{await c.startNotifications();c.addEventListener("characteristicvaluechanged",onData);S.notifies.push(c);rec("NOTIFY","sub "+c.uuid.slice(4,8));}catch(e){rec("notify fail",c.uuid.slice(4,8));}}
+/* Full GATT walk: log every service+characteristic, subscribe to ALL notify chars, pick the best write char.
+   Clones advertise FF00 but stream on other characteristics — this finds them and records the map for debugging. */
+async function discoverAll(){
+  S.svc=null;S.write=null;S.notifies=[];S.framing="jbd";
+  let svcs=[];
+  try{svcs=await S.gatt.getPrimaryServices();}catch(e){rec("gatt err","getPrimaryServices "+e.message);}
+  rec("GATT",svcs.length+" service(s)");
+  let wJbd=null,wDaly=null,wAlt=null,wAny=null;
+  for(const s of svcs){
+    const su=s.uuid.slice(4,8);
+    let chars=[];try{chars=await s.getCharacteristics();}catch(e){rec("svc err",su+" "+e.message);continue;}
+    for(const c of chars){
+      const p=c.properties||{};const cu=c.uuid.slice(4,8);
+      const flags=(p.write?"W":"")+(p.writeWithoutResponse?"w":"")+(p.notify?"N":"")+(p.indicate?"I":"")+(p.read?"R":"");
+      rec("CHAR",su+"/"+cu+" ["+flags+"]");
+      if(p.notify||p.indicate){try{await c.startNotifications();c.addEventListener("characteristicvaluechanged",onData);S.notifies.push(c);}catch(e){rec("notify fail",su+"/"+cu);}}
+      if(p.write||p.writeWithoutResponse){
+        if(su==="ff00"&&cu==="ff02")wJbd=c; else if(su==="fff0"&&cu==="fff2")wDaly=c; else if(su==="ffe0")wAlt=c;
+        if(!wAny)wAny=c;
+      }
+    }
   }
-  if(!S.notifies.length&&S.write){try{await S.write.startNotifications();S.write.addEventListener("characteristicvaluechanged",onData);S.notifies.push(S.write);rec("NOTIFY","fallback on write char");}catch(e){}}
+  if(wJbd){S.write=wJbd;S.framing="jbd";}
+  else if(wDaly){S.write=wDaly;S.framing="daly";}
+  else if(wAlt){S.write=wAlt;S.framing="jbd";}
+  else if(wAny){S.write=wAny;S.framing="jbd";}
+  if(S.write)S.svc=S.write.service;
+  rec("WRITE",S.write?(S.write.uuid.slice(4,8)+" framing="+S.framing+" notify="+S.notifies.length):"NONE FOUND");
+  if(!S.write)throw new Error("no writable characteristic");
 }
 function setBadge(cls,big,sm){const b=$("badge");b.className="badge "+cls;b.innerHTML='<span class="big">'+big+'</span>'+(sm?'<span class="sm">'+sm+'</span>':'');}
 
@@ -170,8 +186,7 @@ async function attachGatt(){
   let last=null;
   for(let a=0;a<3;a++){try{S.gatt=await S.dev.gatt.connect();last=null;break;}catch(e){last=e;rec("connect retry",(a+1)+" "+e.message);await sleep(700);}}
   if(last)throw last;
-  await discover();rec("SERVICE",S.framing);
-  S.buf=[];await subscribeAll();
+  S.buf=[];await discoverAll();
   S.connected=true;
 }
 function haveStatus(){return S.info&&S.info.dischargeFet!=null;}
