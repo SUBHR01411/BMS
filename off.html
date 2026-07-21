@@ -61,7 +61,7 @@ details summary{cursor:pointer;text-align:center;list-style:none}
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const hx=a=>[...a].map(b=>b.toString(16).padStart(2,"0").toUpperCase()).join(" ");
-const S={dev:null,gatt:null,write:null,notify:null,buf:[],info:null,busy:false,connected:false,wantConnected:false,framing:"jbd"};
+const S={dev:null,gatt:null,svc:null,write:null,notifies:[],buf:[],info:null,busy:false,connected:false,wantConnected:false,reconnecting:false,wr:false,framing:"jbd"};
 
 /* ---- log ---- */
 let SESSION=[]; try{SESSION=JSON.parse(localStorage.getItem("bms_session_log")||"[]");}catch(e){}
@@ -101,8 +101,12 @@ const jkDischarge=on=>jkFrame(0xAC,on?1:0);
 const jkReadAll=()=>jkFrame(0x96,0);
 
 /* transport & parse */
-async function send(u8){if(!S.write)return;rec("TX",hx(u8));try{if(S.write.writeValueWithoutResponse)await S.write.writeValueWithoutResponse(u8);else await S.write.writeValue(u8);}catch(e){try{await S.write.writeValue(u8);}catch(e2){rec("TX err",e2.message);}}}
-async function sendResp(u8){if(!S.write)return;rec("TX/resp",hx(u8));try{await S.write.writeValue(u8);}catch(e){}}
+async function send(u8){if(!S.write||!S.connected)return;rec("TX",hx(u8));try{
+  if(S.wr)await S.write.writeValue(u8);
+  else if(S.write.writeValueWithoutResponse)await S.write.writeValueWithoutResponse(u8);
+  else await S.write.writeValue(u8);
+}catch(e){rec("TX err",e.message);}}
+async function sendResp(u8){if(!S.write||!S.connected)return;rec("TX/resp",hx(u8));try{await S.write.writeValue(u8);}catch(e){rec("TX/resp err",e.message);}}
 function readStatusCmd(){if(S.framing==="daly")return dalyReadMos();if(S.framing==="jk")return jkReadAll();return jbdRead(0x03);}
 function onData(ev){const v=ev.target.value;const chunk=[];for(let i=0;i<v.byteLength;i++)chunk.push(v.getUint8(i));
   if(S.framing==="jk")return;for(const b of chunk)S.buf.push(b);
@@ -125,7 +129,7 @@ function parseDaly(){let g=0;while(S.buf.length>=13&&g++<40){
 }}
 
 /* discharge escalation */
-async function confirm(want,ms){const t0=Date.now();while(Date.now()-t0<ms){await send(readStatusCmd());await sleep(450);if(S.info&&S.info.dischargeFet===want)return true;}return false;}
+async function confirm(want,ms){const t0=Date.now();while(Date.now()-t0<ms){if(!S.connected)return false;await send(readStatusCmd());await sleep(450);if(S.info&&S.info.dischargeFet===want)return true;}return false;}
 async function doDischarge(want){
   const V=[
     ["E1",async()=>{await send(jbdE1(want));}],
@@ -139,39 +143,55 @@ async function doDischarge(want){
   ];
   const pref=getPref();
   if(pref){const i=V.findIndex(x=>x[0]===pref);if(i>0){const m=V.splice(i,1)[0];V.unshift(m);rec("memory","trying remembered method '"+pref+"' first");}}
-  for(const [n,run] of V){setBadge("wait","Cutting…","method "+n);rec("attempt",n);try{await run();}catch(e){}if(await confirm(want,4000)){rec("OK",n);setPref(n);return n;}}
+  for(const [n,run] of V){if(!S.connected){rec("aborted","link lost mid-cut");return null;}setBadge("wait","Cutting…","method "+n);rec("attempt",n);try{await run();}catch(e){}if(await confirm(want,4000)){rec("OK",n);setPref(n);return n;}}
   rec("FAILED","all methods exhausted");return null;
 }
 
 /* connect */
 async function discover(){
   const svc=async u=>await S.gatt.getPrimaryService(u);
-  try{const s=await svc(JBD_SVC);S.write=await s.getCharacteristic(JBD_W);S.notify=await s.getCharacteristic(JBD_N);S.framing="jbd";return;}catch(e){}
-  try{const s=await svc(DALY_SVC);S.write=await s.getCharacteristic(DALY_W);S.notify=await s.getCharacteristic(DALY_N);S.framing="daly";return;}catch(e){}
-  const s=await svc(ALT_SVC);const c=await s.getCharacteristic(ALT_C);S.write=c;S.notify=c;S.framing="jbd";
+  try{const s=await svc(JBD_SVC);S.svc=s;S.write=await s.getCharacteristic(JBD_W);S.framing="jbd";return;}catch(e){}
+  try{const s=await svc(DALY_SVC);S.svc=s;S.write=await s.getCharacteristic(DALY_W);S.framing="daly";return;}catch(e){}
+  const s=await svc(ALT_SVC);S.svc=s;S.write=await s.getCharacteristic(ALT_C);S.framing="jbd";
+}
+/* subscribe to EVERY notify-capable characteristic in the service (clone packs stream on non-standard chars) */
+async function subscribeAll(){
+  S.notifies=[];let chars=[];
+  try{chars=await S.svc.getCharacteristics();}catch(e){}
+  for(const c of chars){const p=c.properties||{};
+    if(p.notify||p.indicate){try{await c.startNotifications();c.addEventListener("characteristicvaluechanged",onData);S.notifies.push(c);rec("NOTIFY","sub "+c.uuid.slice(4,8));}catch(e){rec("notify fail",c.uuid.slice(4,8));}}
+  }
+  if(!S.notifies.length&&S.write){try{await S.write.startNotifications();S.write.addEventListener("characteristicvaluechanged",onData);S.notifies.push(S.write);rec("NOTIFY","fallback on write char");}catch(e){}}
 }
 function setBadge(cls,big,sm){const b=$("badge");b.className="badge "+cls;b.innerHTML='<span class="big">'+big+'</span>'+(sm?'<span class="sm">'+sm+'</span>':'');}
 
 /* open GATT + services + notifications (reused by connect and the watchdog) */
 async function attachGatt(){
-  S.gatt=await S.dev.gatt.connect();
+  let last=null;
+  for(let a=0;a<3;a++){try{S.gatt=await S.dev.gatt.connect();last=null;break;}catch(e){last=e;rec("connect retry",(a+1)+" "+e.message);await sleep(700);}}
+  if(last)throw last;
   await discover();rec("SERVICE",S.framing);
-  S.buf=[];await S.notify.startNotifications();S.notify.addEventListener("characteristicvaluechanged",onData);
+  S.buf=[];await subscribeAll();
   S.connected=true;
 }
-async function readInitial(n){for(let i=0;i<(n||8)&&(!S.info||S.info.dischargeFet==null);i++){await send(readStatusCmd());await sleep(320);}}
+function haveStatus(){return S.info&&S.info.dischargeFet!=null;}
+async function readInitial(n){
+  for(let i=0;i<(n||8)&&!haveStatus();i++){await send(readStatusCmd());await sleep(320);}
+  if(!haveStatus()&&!S.wr){S.wr=true;rec("mode","no reply — retrying with write-with-response");for(let i=0;i<6&&!haveStatus();i++){await send(readStatusCmd());await sleep(320);}}
+}
 
 /* watchdog: silently reconnect if the link drops (unless the user meant to leave) */
 async function onDrop(){
   S.connected=false;
-  if(!S.wantConnected){render();return;}
+  if(!S.wantConnected||S.reconnecting){render();return;}
+  S.reconnecting=true;
   rec("DROP","link lost — reconnecting");
-  for(let i=0;i<8&&S.wantConnected;i++){
+  for(let i=0;i<6&&S.wantConnected;i++){
     setBadge("wait","Reconnecting…","attempt "+(i+1));
-    try{ await attachGatt(); rec("RECONNECTED"); await readInitial(6); render(); return; }
-    catch(e){ rec("reconnect fail",e.message); await sleep(1200); }
+    try{ await attachGatt(); rec("RECONNECTED"); S.reconnecting=false; await readInitial(6); render(); return; }
+    catch(e){ rec("reconnect fail",e.message); await sleep(1500); }
   }
-  rec("reconnect gave up"); render();
+  S.reconnecting=false; rec("reconnect gave up"); render();
 }
 function armDropWatch(){ if(S.dev&&!S.dev._drop){S.dev._drop=true;S.dev.addEventListener("gattserverdisconnected",onDrop);} }
 
@@ -180,7 +200,7 @@ async function connect(){
   if(!navigator.bluetooth){setBadge("idle","Use Chrome/Edge","Web Bluetooth not supported here");return;}
   S.wantConnected=false;
   try{S.gatt&&S.gatt.connected&&S.gatt.disconnect();}catch(e){}
-  S.connected=false;S.info=null;S.busy=true;render();
+  S.connected=false;S.info=null;S.wr=false;S.busy=true;render();
   try{
     S.dev=await navigator.bluetooth.requestDevice({
       filters:[
